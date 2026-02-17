@@ -1,26 +1,378 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+* {
+  box-sizing: border-box;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f1f4f8;
+  color: #10223b;
+}
+
+.ms-page {
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+}
+
+.ms-panel {
+  background: #ffffff;
+  border: 1px solid #cfd7e3;
+  border-radius: 12px;
+  padding: 18px;
+  align-self: start;
+}
+
+.ms-heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #13356e;
+}
+
+.ms-subheading {
+  margin: 6px 0 16px;
+  font-size: 13px;
+  color: #415a7b;
+}
+
+.ms-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ms-field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #243e63;
+}
+
+.ms-field-full {
+  grid-column: 1 / -1;
+}
+
+.ms-field input,
+.ms-field textarea {
+  width: 100%;
+  border: 1px solid #c6d0e0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #ffffff;
+  color: #132d53;
+}
+
+.ms-field textarea {
+  resize: vertical;
+}
+
+.ms-errors {
+  margin: 12px 0 0;
+  padding: 10px 10px 10px 20px;
+  border: 1px solid #e8a6a6;
+  border-radius: 8px;
+  background: #fff4f4;
+  color: #a43131;
+  font-size: 13px;
+}
+
+.ms-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #475a79;
+}
+
+.ms-download-btn {
+  margin-top: 14px;
+  width: 100%;
+  height: 42px;
+  border: 1px solid #194f93;
+  border-radius: 8px;
+  background: #1d5ca8;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ms-download-btn:disabled {
+  background: #8ea4c2;
+  border-color: #8ea4c2;
+  cursor: not-allowed;
+}
+
+.ms-preview-area {
+  min-height: calc(100vh - 48px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 4px;
+}
+
+.ms-preview-placeholder {
+  width: 768px;
+  height: 580px;
+  border: 1px dashed #7b92b3;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #f9fbff;
+  color: #4d668a;
+}
+
+.t1-card {
+  width: 768px;
+  height: 580px;
+  background: #e7e7e7;
+  border: 1px solid #2f6398;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.t1-header-row {
+  display: grid;
+  grid-template-columns: 136px 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.t1-logo-wrap {
+  padding-top: 4px;
+}
+
+.t1-header-block {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.t1-header-block-right {
+  grid-template-columns: 54px 1fr;
+}
+
+.t1-icon-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #1e568c;
+  display: grid;
+  place-items: center;
+}
+
+.t1-header-copy {
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 500;
+  color: #101820;
+}
+
+.t1-cagr-lead {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #111111;
+}
+
+.t1-highlight {
+  background: #f2e47d;
+  padding: 0 2px;
+}
+
+.t1-main-title {
+  margin: 8px 0 6px;
+  text-align: center;
+  color: #1f3470;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.t1-main-title span {
+  background: #f2e47d;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0 4px;
+}
+
+.t1-chart-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: center;
+  color: #111111;
+}
+
+.t1-chart-title-center {
+  text-align: center;
+}
+
+.t1-yearly-chart {
+  flex: 0 0 auto;
+}
+
+.t1-yearly-plot-wrap {
+  width: 100%;
+  border-bottom: 1px solid #b8bec7;
+  padding: 0 4px 3px;
+}
+
+.t1-yearly-plot {
+  height: 163px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.t1-year-col {
+  width: 48px;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+
+.t1-year-bar-shell {
+  width: 27px;
+  height: 131px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.t1-year-bar {
+  position: relative;
+  width: 100%;
+  background: #5d96c9;
+}
+
+.t1-year-col:nth-child(2n) .t1-year-bar {
+  background: #6b9dce;
+}
+
+.t1-year-col:nth-child(3) .t1-year-bar,
+.t1-year-col:nth-child(4) .t1-year-bar {
+  background: #b8c8de;
+}
+
+.t1-year-bar-label {
+  position: absolute;
+  right: -19px;
+  bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: #102440;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.t1-year-label {
+  font-size: 12px;
+  color: #0f1f34;
+}
+
+.t1-bottom-row {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-height: 0;
+  flex: 1;
+}
+
+.t1-type-chart,
+.t1-region-chart {
+  min-width: 0;
+}
+
+.t1-hbar-area {
+  border-left: 1px solid #b9c0c9;
+  padding-left: 8px;
+}
+
+.t1-hbar-row {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.t1-hbar-label {
+  font-size: 12px;
+  color: #1a2a3e;
+}
+
+.t1-hbar-track {
+  height: 10px;
+  background: transparent;
+}
+
+.t1-hbar-fill {
+  height: 10px;
+  background: #5d96c9;
+}
+
+.t1-pie-layout {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.t1-pie-svg {
+  width: 170px;
+  height: 170px;
+}
+
+.t1-pie-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  max-height: 172px;
+  overflow: hidden;
+}
+
+.t1-pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #15263f;
+}
+
+.t1-pie-swatch {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+}
+
+@media (max-width: 1360px) {
+  .ms-page {
+    grid-template-columns: 1fr;
+  }
+
+  .ms-preview-area {
+    justify-content: flex-start;
+  }
 }

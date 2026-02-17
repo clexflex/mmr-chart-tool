@@ -1,65 +1,156 @@
-import Image from "next/image";
+"use client";
+
+import { useMemo, useRef, useState } from "react";
+import { Template1Card } from "@/components/template1/Template1Card";
+import { downloadElementAsWebp } from "@/lib/export/downloadWebp";
+import { buildTemplate1ViewModel } from "@/lib/template1/generateData";
+import { segmentLimit } from "@/lib/template1/parseInputs";
+import type { SnapshotFormInput } from "@/lib/template1/types";
+
+const DEFAULT_FORM: SnapshotFormInput = {
+  marketTitle: "Global Market",
+  cagrPercent: 4.5,
+  dominantRegion: "Asia Pacific",
+  marketSize2025: 5,
+  marketSize2032: 10,
+  unit: "USD Billion",
+  forecastPeriod: "2026-2032",
+  typeSegmentsRaw: "Type1\nType2\nType3\nType4\nType5\nType6",
+  regionSegmentsRaw: "Asia Pacific\nNorth America\nEurope\nMiddle East and Africa\nSouth America",
+};
 
 export default function Home() {
+  const [form, setForm] = useState<SnapshotFormInput>(DEFAULT_FORM);
+  const [isExporting, setIsExporting] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const { viewModel, errors } = useMemo(() => buildTemplate1ViewModel(form), [form]);
+
+  const updateText = (field: keyof SnapshotFormInput) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setForm((current) => ({ ...current, [field]: event.target.value }));
+    };
+
+  const updateNumber =
+    (field: keyof SnapshotFormInput) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((current) => ({
+        ...current,
+        [field]: event.target.value === "" ? Number.NaN : Number(event.target.value),
+      }));
+    };
+
+  const handleDownload = async () => {
+    if (!viewModel || !previewRef.current || errors.length > 0 || isExporting) {
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await downloadElementAsWebp(previewRef.current, {
+        fileName: "market-snapshot-template1.webp",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <main className="ms-page">
+      <section className="ms-panel">
+        <h1 className="ms-heading">MMR Market Snapshot Builder</h1>
+        <p className="ms-subheading">Template 1: Form input to image preview and WebP export</p>
+
+        <div className="ms-form-grid">
+          <label className="ms-field">
+            <span>Market Title</span>
+            <input value={form.marketTitle} onChange={updateText("marketTitle")} />
+          </label>
+
+          <label className="ms-field">
+            <span>CAGR (%)</span>
+            <input
+              type="number"
+              step="0.01"
+              value={Number.isNaN(form.cagrPercent) ? "" : form.cagrPercent}
+              onChange={updateNumber("cagrPercent")}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </label>
+
+          <label className="ms-field">
+            <span>Dominating Region/Country</span>
+            <input value={form.dominantRegion} onChange={updateText("dominantRegion")} />
+          </label>
+
+          <label className="ms-field">
+            <span>Forecast Period</span>
+            <input value={form.forecastPeriod} onChange={updateText("forecastPeriod")} />
+          </label>
+
+          <label className="ms-field">
+            <span>Market Size (2025)</span>
+            <input
+              type="number"
+              step="0.01"
+              value={Number.isNaN(form.marketSize2025) ? "" : form.marketSize2025}
+              onChange={updateNumber("marketSize2025")}
+            />
+          </label>
+
+          <label className="ms-field">
+            <span>Market Size (2032)</span>
+            <input
+              type="number"
+              step="0.01"
+              value={Number.isNaN(form.marketSize2032) ? "" : form.marketSize2032}
+              onChange={updateNumber("marketSize2032")}
+            />
+          </label>
+
+          <label className="ms-field ms-field-full">
+            <span>Unit of Market Size</span>
+            <input value={form.unit} onChange={updateText("unit")} />
+          </label>
+
+          <label className="ms-field ms-field-full">
+            <span>Type Segments (comma or newline separated, top {segmentLimit()} rendered)</span>
+            <textarea rows={4} value={form.typeSegmentsRaw} onChange={updateText("typeSegmentsRaw")} />
+          </label>
+
+          <label className="ms-field ms-field-full">
+            <span>Region Segments (comma or newline separated, top {segmentLimit()} rendered)</span>
+            <textarea rows={4} value={form.regionSegmentsRaw} onChange={updateText("regionSegmentsRaw")} />
+          </label>
         </div>
-      </main>
-    </div>
+
+        {errors.length > 0 ? (
+          <ul className="ms-errors">
+            {errors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        ) : null}
+
+        {viewModel && (viewModel.meta.truncatedTypes || viewModel.meta.truncatedRegions) ? (
+          <p className="ms-note">Rendering top {segmentLimit()} items for chart/legend stability.</p>
+        ) : null}
+
+        <button
+          type="button"
+          className="ms-download-btn"
+          onClick={handleDownload}
+          disabled={!viewModel || errors.length > 0 || isExporting}
+        >
+          {isExporting ? "Generating WebP..." : "Download WebP"}
+        </button>
+      </section>
+
+      <section className="ms-preview-area">
+        {viewModel ? (
+          <Template1Card ref={previewRef} viewModel={viewModel} unit={form.unit} />
+        ) : (
+          <div className="ms-preview-placeholder">Fill required fields to render preview.</div>
+        )}
+      </section>
+    </main>
   );
 }
