@@ -2,14 +2,12 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 type HeaderRowProps = {
-  marketTitle: string;
   headerDominance: string;
   headerCagrLead: string;
   headerCagrBody: string;
 };
 
 export function HeaderRow({
-  marketTitle,
   headerDominance,
   headerCagrLead,
   headerCagrBody,
@@ -28,33 +26,28 @@ export function HeaderRow({
 
       <div className="t1-header-block">
         <IconCircle kind="lightning" />
-        <p className="t1-header-copy">{highlightPhrase(headerDominance, marketTitle)}</p>
+        <p className="t1-header-copy">{boldPrefix(headerDominance, " Market accounted")}</p>
       </div>
 
       <div className="t1-header-block t1-header-block-right">
         <IconCircle kind="flame" />
         <div>
           <div className="t1-cagr-lead">{headerCagrLead}</div>
-          <p className="t1-header-copy">{highlightPhrase(headerCagrBody, marketTitle)}</p>
+          <p className="t1-header-copy">{headerCagrBody}</p>
         </div>
       </div>
     </div>
   );
 }
 
-function highlightPhrase(text: string, phrase: string): ReactNode {
-  const index = text.toLowerCase().indexOf(phrase.toLowerCase());
+function boldPrefix(text: string, delimiter: string): ReactNode {
+  const index = text.indexOf(delimiter);
   if (index < 0) return text;
-
-  const before = text.slice(0, index);
-  const matched = text.slice(index, index + phrase.length);
-  const after = text.slice(index + phrase.length);
 
   return (
     <>
-      {before}
-      <span className="t1-highlight">{matched}</span>
-      {after}
+      <strong>{text.slice(0, index)}</strong>
+      {text.slice(index)}
     </>
   );
 }

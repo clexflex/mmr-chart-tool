@@ -13,11 +13,15 @@ export function buildTemplate1ViewModel(input: SnapshotFormInput): BuildViewMode
   const dominantRegion = input.dominantRegion.trim();
   const unit = input.unit.trim();
   const forecastPeriod = input.forecastPeriod.trim();
+  const primarySegmentTitle = input.primarySegmentTitle.trim();
+  const secondarySegmentTitle = input.secondarySegmentTitle.trim();
 
   if (!marketTitle) errors.push("Market title is required.");
   if (!dominantRegion) errors.push("Dominating region/country is required.");
   if (!unit) errors.push("Unit of market size is required.");
   if (!forecastPeriod) errors.push("Forecast period is required.");
+  if (!primarySegmentTitle) errors.push("Primary segment title is required.");
+  if (!secondarySegmentTitle) errors.push("Secondary segment title is required.");
 
   if (!Number.isFinite(input.cagrPercent) || input.cagrPercent < 0) {
     errors.push("CAGR must be a non-negative number.");
@@ -63,8 +67,8 @@ export function buildTemplate1ViewModel(input: SnapshotFormInput): BuildViewMode
         headerCagrBody: `${marketTitle} to grow at a CAGR of ${cagrText}% during ${forecastPeriod}`,
         mainTitle: marketTitle,
         yearlyTitle: `${marketTitle} size in ${unit} (2020-2032)`,
-        typeTitle: `${marketTitle}, by Type in 2025 (${unitLabelForType(unit)})`,
-        regionTitle: `${marketTitle}, by Region In 2025 (%)`,
+        typeTitle: `${marketTitle}, by ${primarySegmentTitle} in 2025 (${unitLabelForType(unit)})`,
+        regionTitle: `${marketTitle}, by ${secondarySegmentTitle} in 2025 (%)`,
       },
       years,
       typeSeries,

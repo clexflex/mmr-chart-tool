@@ -3,21 +3,24 @@ import type { ExportOptions } from "@/lib/template1/types";
 
 const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   fileName: "market-snapshot-template1.webp",
-  pixelRatio: 2,
+  pixelRatio: 1,
   quality: 0.95,
   format: "image/webp",
 };
 
 export async function downloadElementAsWebp(
   element: HTMLElement,
-  options?: Partial<ExportOptions>
+  options?: Partial<ExportOptions> & { width?: number; height?: number }
 ): Promise<void> {
   const config = { ...DEFAULT_EXPORT_OPTIONS, ...options };
+  const width = options?.width ?? Math.round(element.getBoundingClientRect().width);
+  const height = options?.height ?? Math.round(element.getBoundingClientRect().height);
 
   const canvas = await toCanvas(element, {
     pixelRatio: config.pixelRatio,
+    width,
+    height,
     cacheBust: true,
-    backgroundColor: "#e7e7e7",
   });
 
   const blob = await new Promise<Blob>((resolve, reject) => {

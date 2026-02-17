@@ -16,10 +16,12 @@ const PIE_COLORS = [
 type RegionPieChartProps = {
   title: string;
   data: SegmentPoint[];
+  chartHeight: number;
 };
 
-export function RegionPieChart({ title, data }: RegionPieChartProps) {
+export function RegionPieChart({ title, data, chartHeight }: RegionPieChartProps) {
   const total = data.reduce((acc, item) => acc + item.value, 0);
+  const pieSize = clamp(chartHeight, 120, 220);
   const slices = data
     .map((item) => (item.value / total) * 360)
     .reduce<
@@ -35,8 +37,14 @@ export function RegionPieChart({ title, data }: RegionPieChartProps) {
   return (
     <section className="t1-region-chart">
       <h3 className="t1-chart-title">{title}</h3>
-      <div className="t1-pie-layout">
-        <svg viewBox="0 0 184 184" className="t1-pie-svg" role="img" aria-label={title}>
+      <div className="t1-pie-layout" style={{ height: chartHeight }}>
+        <svg
+          viewBox="0 0 184 184"
+          className="t1-pie-svg"
+          style={{ width: pieSize, height: pieSize }}
+          role="img"
+          aria-label={title}
+        >
           {data.map((item, index) => {
             const { start, end } = slices[index];
 
@@ -59,13 +67,19 @@ export function RegionPieChart({ title, data }: RegionPieChartProps) {
                 className="t1-pie-swatch"
                 style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
               />
-              <span>{item.label}</span>
+              <span className="t1-pie-legend-label" title={item.label}>
+                {item.label}
+              </span>
             </li>
           ))}
         </ul>
       </div>
     </section>
   );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function arcPath(

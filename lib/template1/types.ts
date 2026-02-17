@@ -6,6 +6,8 @@ export type SnapshotFormInput = {
   marketSize2032: number;
   unit: string;
   forecastPeriod: string;
+  primarySegmentTitle: string;
+  secondarySegmentTitle: string;
   typeSegmentsRaw: string;
   regionSegmentsRaw: string;
 };
@@ -41,7 +43,7 @@ export type Template1ViewModel = {
 
 export type ExportOptions = {
   fileName: string;
-  pixelRatio: 2;
-  quality: 0.95;
+  pixelRatio: number;
+  quality: number;
   format: "image/webp";
 };
