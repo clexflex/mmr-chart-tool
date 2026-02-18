@@ -36,9 +36,6 @@ export function SegmentCatalogEditor({ rows, onRowsChange }: SegmentCatalogEdito
     <section className="ms-section-block">
       <div className="ms-section-head-inline">
         <h2 className="ms-section-title">Segment Catalog</h2>
-        <Button type="button" variant="outline" className="ms-secondary-btn" onClick={addRow}>
-          Add Segment
-        </Button>
       </div>
 
       <div className="ms-segment-list">
@@ -76,6 +73,12 @@ export function SegmentCatalogEditor({ rows, onRowsChange }: SegmentCatalogEdito
             </article>
           );
         })}
+      </div>
+
+      <div className="ms-segment-add-row">
+        <Button type="button" variant="outline" className="ms-secondary-btn" onClick={addRow}>
+          Add Segment
+        </Button>
       </div>
     </section>
   );

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type {
   ChartTemplateKind,
   DensityMode,
@@ -123,6 +124,10 @@ const DEFAULT_MAPPING: SnapshotChartMapping = {
 const MIN_PREVIEW_WIDTH = 600;
 const MIN_PREVIEW_HEIGHT = 420;
 const MAX_PREVIEW_SIZE = 900;
+const MIN_SIDEBAR_WIDTH = 400;
+const DEFAULT_SIDEBAR_WIDTH = 440;
+const MAX_SIDEBAR_WIDTH = 620;
+const SIDEBAR_WIDTH_STORAGE_KEY = "mmr.sidebarWidthPx.v2";
 const MIN_CHART_HEIGHT = 110;
 const MAX_CHART_HEIGHT = 320;
 const TEMPLATE1_OVERHEAD = 168;
@@ -152,6 +157,7 @@ export default function Home() {
 
   const [previewWidth, setPreviewWidth] = useState(900);
   const [previewHeight, setPreviewHeight] = useState(580);
+  const [sidebarWidthPx, setSidebarWidthPx] = useState(DEFAULT_SIDEBAR_WIDTH);
 
   const [template1ChartHeights, setTemplate1ChartHeights] =
     useState<Template1ChartHeights>(DEFAULT_TEMPLATE1_CHART_HEIGHTS);
@@ -166,9 +172,11 @@ export default function Home() {
   const [backgroundColor, setBackgroundColor] = useState("#e7e7e7");
   const [isExporting, setIsExporting] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
 
   const previewRef = useRef<HTMLDivElement>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
+  const sidebarResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const unifiedInput: UnifiedMarketInput = useMemo(
     () => ({
@@ -385,6 +393,20 @@ export default function Home() {
       }));
     };
 
+  const handleSidebarResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    sidebarResizeRef.current = {
+      startX: event.clientX,
+      startWidth: sidebarWidthPx,
+    };
+    setIsSidebarResizing(true);
+    event.preventDefault();
+  };
+
+  const handleSidebarResizeReset = () => {
+    setSidebarWidthPx(DEFAULT_SIDEBAR_WIDTH);
+  };
+
   const handleDownload = async () => {
     if (!activeViewModel || !previewRef.current || activeErrors.length > 0 || isExporting) {
       return;
@@ -448,493 +470,547 @@ export default function Home() {
     }
   }, [useSolidBackground]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
+    if (!saved) return;
+    const parsed = Number(saved);
+    if (!Number.isFinite(parsed)) return;
+    setSidebarWidthPx(clamp(Math.round(parsed), MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidthPx));
+  }, [sidebarWidthPx]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  useEffect(() => {
+    if (!isSidebarResizing) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const current = sidebarResizeRef.current;
+      if (!current) return;
+      const nextWidth = current.startWidth + (event.clientX - current.startX);
+      setSidebarWidthPx(clamp(Math.round(nextWidth), MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH));
+    };
+
+    const handleMouseUp = () => {
+      sidebarResizeRef.current = null;
+      setIsSidebarResizing(false);
+    };
+
+    document.body.classList.add("ms-is-resizing");
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.body.classList.remove("ms-is-resizing");
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isSidebarResizing]);
+
   return (
     <div className={`app-shell density-${density}`} style={densityStyle(density)}>
-      <header className="ms-workspace-header">
-        <div className="ms-workspace-topbar">
-          <div className="ms-workspace-status">
-            <span>Snapshot Workspace</span>
-            <span>{templateKind.replace("template", "Template ")}</span>
-          </div>
+      <SidebarProvider defaultOpen style={{ "--sidebar-width": `${sidebarWidthPx}px` } as CSSProperties}>
+        <Sidebar variant="inset" collapsible="offcanvas" className="ms-editor-sidebar">
+          <SidebarHeader className="ms-sidebar-title-wrap">
+            <span className="ms-sidebar-title">Workspace Controls</span>
+          </SidebarHeader>
+          <SidebarContent className="ms-sidebar-scroll">
+            <section className="ms-sidebar-sections">
+              <details className="ms-collapsible ms-tone-1" open>
+                <summary>0. Workspace & Export</summary>
+                <section className="ms-section-block">
+                  <div className="ms-workspace-controls">
+                    <label className="ms-field ms-workspace-field">
+                      <span>Preview Width</span>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={MIN_PREVIEW_WIDTH}
+                        max={MAX_PREVIEW_SIZE}
+                        value={previewWidth}
+                        onChange={handlePreviewDimension(setPreviewWidth, MIN_PREVIEW_WIDTH, MAX_PREVIEW_SIZE)}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>Preview Height</span>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={MIN_PREVIEW_HEIGHT}
+                        max={MAX_PREVIEW_SIZE}
+                        value={previewHeight}
+                        onChange={handlePreviewDimension(setPreviewHeight, MIN_PREVIEW_HEIGHT, MAX_PREVIEW_SIZE)}
+                      />
+                    </label>
+                    <label className="ms-field ms-check-field ms-workspace-field">
+                      <span>Background Fill</span>
+                      <label className="ms-inline-check">
+                        <Checkbox
+                          checked={useSolidBackground}
+                          onCheckedChange={(checked) => setUseSolidBackground(checked === true)}
+                        />
+                        Use solid
+                      </label>
+                    </label>
+                    {useSolidBackground ? (
+                      <label className="ms-field ms-workspace-field ms-color-field">
+                        <span>Background Color</span>
+                        <input
+                          ref={colorInputRef}
+                          className="ms-color-input"
+                          type="color"
+                          value={backgroundColor}
+                          onChange={(event) => setBackgroundColor(event.target.value)}
+                        />
+                      </label>
+                    ) : null}
+                  </div>
 
-          <div className="ms-workspace-actions">
-            <Button
-              type="button"
-              className="ms-download-btn"
-              onClick={handleDownload}
-              disabled={!activeViewModel || activeErrors.length > 0 || isExporting}
-            >
-              {isExporting ? "Generating WebP..." : "Download Snapshot WebP"}
-            </Button>
-            <Button type="button" variant="outline" className="ms-secondary-btn ms-copy-btn" onClick={handleCopyHtml}>
-              {copyStatus === "copied"
-                ? "HTML Copied"
-                : copyStatus === "failed"
-                ? "Copy Failed"
-                : "Copy Segmentation HTML"}
-            </Button>
-            <Button type="button" variant="outline" className="ms-secondary-btn" onClick={handleClearAll}>
-              Clear All Inputs
-            </Button>
-          </div>
-        </div>
-        <details className="ms-workspace-settings">
-          <summary>Workspace Settings</summary>
-          <div className="ms-workspace-grid">
-            <div className="ms-workspace-controls">
-              <label className="ms-field">
-                <span>Preview Width</span>
-                <Input
-                  type="number"
-                  min={MIN_PREVIEW_WIDTH}
-                  max={MAX_PREVIEW_SIZE}
-                  value={previewWidth}
-                  onChange={handlePreviewDimension(setPreviewWidth, MIN_PREVIEW_WIDTH, MAX_PREVIEW_SIZE)}
+                  <div className="ms-workspace-derivation">
+                    <label className="ms-field ms-workspace-field">
+                      <span>Known Year</span>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={Number.isFinite(knownYearInput.knownYear) ? knownYearInput.knownYear : ""}
+                        onChange={(event) => handleKnownYearInputChange("knownYear", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>Known Size</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(knownYearInput.knownMarketSize) ? knownYearInput.knownMarketSize : ""}
+                        onChange={(event) => handleKnownYearInputChange("knownMarketSize", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>CAGR (%)</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(knownYearInput.cagrPercent) ? knownYearInput.cagrPercent : ""}
+                        onChange={(event) => handleKnownYearInputChange("cagrPercent", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>Size 2025</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(derived.marketSize2025) ? derived.marketSize2025 : ""}
+                        onChange={(event) => handleDerivedValueChange("marketSize2025", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>Size 2032</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
+                        onChange={(event) => handleDerivedValueChange("marketSize2032", Number(event.target.value))}
+                      />
+                    </label>
+                    <Button type="button" variant="outline" className="ms-secondary-btn ms-recalculate-btn" onClick={handleRecalculate}>
+                      Recalculate
+                    </Button>
+                  </div>
+                </section>
+              </details>
+
+              <details className="ms-collapsible ms-tone-2" open>
+                <summary>1. Market Basics</summary>
+                <section className="ms-section-block">
+                  <div className="ms-form-grid ms-form-grid-3">
+                    <label className="ms-field">
+                      <span>Template</span>
+                      <Select value={templateKind} onValueChange={(value) => setTemplateKind(value as ChartTemplateKind)}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="template1">Template 1</SelectItem>
+                          <SelectItem value="template2">Template 2</SelectItem>
+                          <SelectItem value="template3">Template 3</SelectItem>
+                          <SelectItem value="template4">Template 4</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </label>
+
+                    <label className="ms-field">
+                      <span>Density Mode</span>
+                      <Select value={density} onValueChange={(value) => setDensity(value as DensityMode)}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select density mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="compact">Compact</SelectItem>
+                          <SelectItem value="spacious">Spacious</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </label>
+
+                    <TableStyleToggle value={tableStyleMode} onChange={setTableStyleMode} />
+
+                    <label className="ms-field">
+                      <span>Market Title</span>
+                      <Input value={marketTitle} onChange={(event) => setMarketTitle(event.target.value)} />
+                    </label>
+
+                    <label className="ms-field">
+                      <span>Dominating Region/Country</span>
+                      <Input value={dominantRegion} onChange={(event) => setDominantRegion(event.target.value)} />
+                    </label>
+
+                    <label className="ms-field">
+                      <span>Unit of Market Size</span>
+                      <Input value={unit} onChange={(event) => setUnit(event.target.value)} />
+                    </label>
+                  </div>
+                </section>
+              </details>
+
+              <details className="ms-collapsible ms-tone-3" open>
+                <summary>2. Report Coverage</summary>
+                <section className="ms-section-block">
+                  <div className="ms-form-grid ms-form-grid-3">
+                    <label className="ms-field">
+                      <span>Base Year</span>
+                      <Input
+                        type="number"
+                        value={Number.isFinite(baseYear) ? baseYear : ""}
+                        onChange={(event) => setBaseYear(Number(event.target.value))}
+                      />
+                    </label>
+
+                    <label className="ms-field">
+                      <span>Forecast Period</span>
+                      <Input value={forecastPeriod} onChange={(event) => setForecastPeriod(event.target.value)} />
+                    </label>
+
+                    <label className="ms-field ms-check-field">
+                      <span>Region in Table</span>
+                      <label className="ms-inline-check">
+                        <Checkbox
+                          checked={includeRegionInTable}
+                          onCheckedChange={(checked) => setIncludeRegionInTable(checked === true)}
+                        />
+                        Include region/country segments
+                      </label>
+                    </label>
+
+                    <label className="ms-field ms-field-full">
+                      <span>Historical Data</span>
+                      <Input value={historicalDataText} onChange={(event) => setHistoricalDataText(event.target.value)} />
+                    </label>
+                  </div>
+                </section>
+              </details>
+
+              <details className="ms-collapsible ms-tone-4" open>
+                <summary>3. Segment Catalog</summary>
+                <SegmentCatalogEditor rows={segmentRows} onRowsChange={setSegmentRows} />
+              </details>
+
+              <details className="ms-collapsible ms-tone-5" open>
+                <summary>4. Snapshot Mapping</summary>
+                <SegmentMappingControls
+                  templateKind={templateKind}
+                  mapping={mapping}
+                  rows={segmentRows}
+                  onMappingChange={setMapping}
+                  invalidMessage={mappingValidationMessage}
                 />
-              </label>
-              <label className="ms-field">
-                <span>Preview Height</span>
-                <Input
-                  type="number"
-                  min={MIN_PREVIEW_HEIGHT}
-                  max={MAX_PREVIEW_SIZE}
-                  value={previewHeight}
-                  onChange={handlePreviewDimension(setPreviewHeight, MIN_PREVIEW_HEIGHT, MAX_PREVIEW_SIZE)}
-                />
-              </label>
-              <label className="ms-field ms-check-field">
-                <span>Background Fill</span>
-                <label className="ms-inline-check">
-                  <Checkbox
-                    checked={useSolidBackground}
-                    onCheckedChange={(checked) => setUseSolidBackground(checked === true)}
-                  />
-                  Use solid
-                </label>
-              </label>
-              {useSolidBackground ? (
-                <label className="ms-field">
-                  <span>Background Color</span>
-                  <input
-                    ref={colorInputRef}
-                    className="ms-color-input"
-                    type="color"
-                    value={backgroundColor}
-                    onChange={(event) => setBackgroundColor(event.target.value)}
-                  />
-                </label>
-              ) : null}
+              </details>
+
+              <details className="ms-collapsible ms-tone-6">
+                <summary>5. Advanced Chart Layout</summary>
+                <section className="ms-section-block">
+                  <details className="ms-advanced-settings" open>
+                    <summary>Advanced chart sizing</summary>
+                    {templateKind === "template1" ? (
+                      <div className="ms-preview-settings-row ms-preview-settings-row-3">
+                        <label className="ms-field">
+                          <span>Yearly Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template1ChartHeights.yearlyPlot}
+                            onChange={handleTemplate1ChartHeight("yearlyPlot")}
+                          />
+                        </label>
+                        <label className="ms-field">
+                          <span>Type Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template1ChartHeights.typeChart}
+                            onChange={handleTemplate1ChartHeight("typeChart")}
+                          />
+                        </label>
+                        <label className="ms-field">
+                          <span>Region Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template1ChartHeights.regionChart}
+                            onChange={handleTemplate1ChartHeight("regionChart")}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+
+                    {templateKind === "template2" ? (
+                      <div className="ms-preview-settings-row ms-preview-settings-row-3">
+                        <label className="ms-field">
+                          <span>Top Segment Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template2ChartHeights.topSegment}
+                            onChange={handleTemplate2ChartHeight("topSegment")}
+                          />
+                        </label>
+                        <label className="ms-field">
+                          <span>Bottom Left Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template2ChartHeights.bottomLeft}
+                            onChange={handleTemplate2ChartHeight("bottomLeft")}
+                          />
+                        </label>
+                        <label className="ms-field">
+                          <span>Bottom Right Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template2ChartHeights.bottomRight}
+                            onChange={handleTemplate2ChartHeight("bottomRight")}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+
+                    {templateKind === "template3" ? (
+                      <div className="ms-preview-settings-row ms-preview-settings-row-3">
+                        <label className="ms-field">
+                          <span>Top Segment Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template3ChartHeights.topSegment}
+                            onChange={handleTemplate3ChartHeight("topSegment")}
+                          />
+                        </label>
+                        <label className="ms-field">
+                          <span>Bottom Left Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template3ChartHeights.bottomLeft}
+                            onChange={handleTemplate3ChartHeight("bottomLeft")}
+                          />
+                        </label>
+                        <label className="ms-field">
+                          <span>Bottom Right Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template3ChartHeights.bottomRight}
+                            onChange={handleTemplate3ChartHeight("bottomRight")}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+
+                    {templateKind === "template4" ? (
+                      <div className="ms-preview-settings-row">
+                        <label className="ms-field">
+                          <span>Top Segment Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template4ChartHeights.topSegment}
+                            onChange={handleTemplate4ChartHeight("topSegment")}
+                          />
+                        </label>
+                        <label className="ms-field">
+                          <span>Bottom Main Chart Height</span>
+                          <Input
+                            type="number"
+                            min={MIN_CHART_HEIGHT}
+                            max={MAX_CHART_HEIGHT}
+                            value={template4ChartHeights.bottomMain}
+                            onChange={handleTemplate4ChartHeight("bottomMain")}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+                  </details>
+
+                  {activeErrors.length > 0 ? (
+                    <ul className="ms-errors">
+                      {activeErrors.map((error) => (
+                        <li key={error}>{error}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  {activeWasAutoBalanced ? (
+                    <p className="ms-note">Chart heights were auto-balanced to fit the current preview height.</p>
+                  ) : null}
+
+                  {snapshotContext.truncated ? (
+                    <p className="ms-note">Rendering top 10 items for chart/legend stability.</p>
+                  ) : null}
+                </section>
+              </details>
+            </section>
+          </SidebarContent>
+        </Sidebar>
+        <div
+          className={`ms-sidebar-resize-handle${isSidebarResizing ? " is-active" : ""}`}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          title="Drag to resize sidebar (double-click to reset)"
+          style={{ left: `${sidebarWidthPx - 4}px` }}
+          onMouseDown={handleSidebarResizeStart}
+          onDoubleClick={handleSidebarResizeReset}
+        />
+
+        <SidebarInset className="ms-main-shell">
+          <header className="ms-workspace-header ms-workspace-header-single">
+            <div className="ms-workspace-topbar">
+              <div className="ms-workspace-status">
+                <SidebarTrigger className="ms-sidebar-trigger" />
+                <span className="ms-toolbar-label">MMR Snapshot Builder</span>
+                <span className="ms-toolbar-chip">{templateKind.replace("template", "Template ")}</span>
+              </div>
+
+              <div className="ms-workspace-actions">
+                <Button
+                  type="button"
+                  className="ms-download-btn ms-toolbar-btn"
+                  onClick={handleDownload}
+                  disabled={!activeViewModel || activeErrors.length > 0 || isExporting}
+                >
+                  {isExporting ? "Exporting..." : "Download WebP"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="ms-secondary-btn ms-copy-btn ms-toolbar-btn"
+                  onClick={handleCopyHtml}
+                >
+                  {copyStatus === "copied"
+                    ? "HTML Copied"
+                    : copyStatus === "failed"
+                    ? "Copy Failed"
+                    : "Copy HTML"}
+                </Button>
+                <Button type="button" variant="outline" className="ms-secondary-btn ms-clear-btn ms-toolbar-btn" onClick={handleClearAll}>
+                  Clear
+                </Button>
+              </div>
             </div>
+          </header>
 
-            <div className="ms-workspace-derivation">
-              <label className="ms-field">
-                <span>Known Year</span>
-                <Input
-                  type="number"
-                  value={Number.isFinite(knownYearInput.knownYear) ? knownYearInput.knownYear : ""}
-                  onChange={(event) => handleKnownYearInputChange("knownYear", Number(event.target.value))}
-                />
-              </label>
-              <label className="ms-field">
-                <span>Known Size</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={Number.isFinite(knownYearInput.knownMarketSize) ? knownYearInput.knownMarketSize : ""}
-                  onChange={(event) => handleKnownYearInputChange("knownMarketSize", Number(event.target.value))}
-                />
-              </label>
-              <label className="ms-field">
-                <span>CAGR (%)</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={Number.isFinite(knownYearInput.cagrPercent) ? knownYearInput.cagrPercent : ""}
-                  onChange={(event) => handleKnownYearInputChange("cagrPercent", Number(event.target.value))}
-                />
-              </label>
-              <label className="ms-field">
-                <span>Size 2025</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={Number.isFinite(derived.marketSize2025) ? derived.marketSize2025 : ""}
-                  onChange={(event) => handleDerivedValueChange("marketSize2025", Number(event.target.value))}
-                />
-              </label>
-              <label className="ms-field">
-                <span>Size 2032</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
-                  onChange={(event) => handleDerivedValueChange("marketSize2032", Number(event.target.value))}
-                />
-              </label>
-              <Button
-                type="button"
-                variant="outline"
-                className="ms-secondary-btn ms-recalculate-btn"
-                onClick={handleRecalculate}
-              >
-                Recalculate
-              </Button>
-            </div>
-          </div>
-        </details>
-      </header>
-      <main className="ms-page">
-        <section className="ms-panel">
-          <details className="ms-collapsible" open>
-            <summary>1. Market Basics</summary>
-            <section className="ms-section-block">
-              <div className="ms-form-grid ms-form-grid-3">
-              <label className="ms-field">
-                <span>Template</span>
-                <Select value={templateKind} onValueChange={(value) => setTemplateKind(value as ChartTemplateKind)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="template1">Template 1</SelectItem>
-                    <SelectItem value="template2">Template 2</SelectItem>
-                    <SelectItem value="template3">Template 3</SelectItem>
-                    <SelectItem value="template4">Template 4</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
+          <main className="ms-main-content">
+            <section className="ms-preview-area ms-preview-area-dual">
+              <div className="ms-preview-x-scroll">
+                <div className="ms-preview-stack">
+                  {templateKind === "template1" && template1ViewModel ? (
+                    <Template1Card
+                      ref={previewRef}
+                      viewModel={template1ViewModel}
+                      unit={unit}
+                      width={previewWidth}
+                      height={previewHeight}
+                      backgroundColor={activeBackgroundColor}
+                      density={density}
+                      chartHeights={template1Balanced.heights}
+                    />
+                  ) : null}
 
-              <label className="ms-field">
-                <span>Density Mode</span>
-                <Select value={density} onValueChange={(value) => setDensity(value as DensityMode)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select density mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compact">Compact</SelectItem>
-                    <SelectItem value="spacious">Spacious</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
+                  {templateKind === "template2" && template2ViewModel ? (
+                    <Template2Card
+                      ref={previewRef}
+                      viewModel={template2ViewModel}
+                      width={previewWidth}
+                      height={previewHeight}
+                      backgroundColor={activeBackgroundColor}
+                      density={density}
+                      chartHeights={template2Balanced.heights}
+                    />
+                  ) : null}
 
-              <TableStyleToggle value={tableStyleMode} onChange={setTableStyleMode} />
+                  {templateKind === "template3" && template3ViewModel ? (
+                    <Template3Card
+                      ref={previewRef}
+                      viewModel={template3ViewModel}
+                      width={previewWidth}
+                      height={previewHeight}
+                      backgroundColor={activeBackgroundColor}
+                      density={density}
+                      chartHeights={template3Balanced.heights}
+                    />
+                  ) : null}
 
-              <label className="ms-field">
-                <span>Market Title</span>
-                <Input value={marketTitle} onChange={(event) => setMarketTitle(event.target.value)} />
-              </label>
+                  {templateKind === "template4" && template4ViewModel ? (
+                    <Template4Card
+                      ref={previewRef}
+                      viewModel={template4ViewModel}
+                      width={previewWidth}
+                      height={previewHeight}
+                      backgroundColor={activeBackgroundColor}
+                      density={density}
+                      chartHeights={template4Balanced.heights}
+                    />
+                  ) : null}
 
-              <label className="ms-field">
-                <span>Dominating Region/Country</span>
-                <Input value={dominantRegion} onChange={(event) => setDominantRegion(event.target.value)} />
-              </label>
+                  {!snapshotResult.viewModel ? (
+                    <div className="ms-preview-placeholder" style={{ width: previewWidth, height: previewHeight }}>
+                      Fill required fields and valid mapping to render snapshot preview.
+                    </div>
+                  ) : null}
 
-              <label className="ms-field">
-                <span>Unit of Market Size</span>
-                <Input value={unit} onChange={(event) => setUnit(event.target.value)} />
-              </label>
+                  <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
+                </div>
               </div>
             </section>
-          </details>
-
-          <details className="ms-collapsible" open>
-            <summary>2. Report Coverage</summary>
-            <section className="ms-section-block">
-              <div className="ms-form-grid ms-form-grid-3">
-              <label className="ms-field">
-                <span>Base Year</span>
-                <Input
-                  type="number"
-                  value={Number.isFinite(baseYear) ? baseYear : ""}
-                  onChange={(event) => setBaseYear(Number(event.target.value))}
-                />
-              </label>
-
-              <label className="ms-field">
-                <span>Forecast Period</span>
-                <Input value={forecastPeriod} onChange={(event) => setForecastPeriod(event.target.value)} />
-              </label>
-
-              <label className="ms-field ms-check-field">
-                <span>Region in Table</span>
-                <label className="ms-inline-check">
-                  <Checkbox
-                    checked={includeRegionInTable}
-                    onCheckedChange={(checked) => setIncludeRegionInTable(checked === true)}
-                  />
-                  Include region/country segments
-                </label>
-              </label>
-
-              <label className="ms-field ms-field-full">
-                <span>Historical Data</span>
-                <Input value={historicalDataText} onChange={(event) => setHistoricalDataText(event.target.value)} />
-              </label>
-              </div>
-            </section>
-          </details>
-
-          <details className="ms-collapsible" open>
-            <summary>3. Segment Catalog</summary>
-            <SegmentCatalogEditor rows={segmentRows} onRowsChange={setSegmentRows} />
-          </details>
-
-          <details className="ms-collapsible" open>
-            <summary>4. Snapshot Mapping</summary>
-            <SegmentMappingControls
-              templateKind={templateKind}
-              mapping={mapping}
-              rows={segmentRows}
-              onMappingChange={setMapping}
-              invalidMessage={mappingValidationMessage}
-            />
-          </details>
-
-          <details className="ms-collapsible">
-            <summary>5. Advanced Chart Layout</summary>
-            <section className="ms-section-block">
-              <p className="ms-hint">
-                Workspace controls (preview size, background, export, clear) are in the top header for faster multi-market work.
-              </p>
-
-              <details className="ms-advanced-settings" open>
-              <summary>Advanced chart sizing</summary>
-              {templateKind === "template1" ? (
-                <div className="ms-preview-settings-row ms-preview-settings-row-3">
-                  <label className="ms-field">
-                    <span>Yearly Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template1ChartHeights.yearlyPlot}
-                      onChange={handleTemplate1ChartHeight("yearlyPlot")}
-                    />
-                  </label>
-                  <label className="ms-field">
-                    <span>Type Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template1ChartHeights.typeChart}
-                      onChange={handleTemplate1ChartHeight("typeChart")}
-                    />
-                  </label>
-                  <label className="ms-field">
-                    <span>Region Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template1ChartHeights.regionChart}
-                      onChange={handleTemplate1ChartHeight("regionChart")}
-                    />
-                  </label>
-                </div>
-              ) : null}
-
-              {templateKind === "template2" ? (
-                <div className="ms-preview-settings-row ms-preview-settings-row-3">
-                  <label className="ms-field">
-                    <span>Top Segment Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template2ChartHeights.topSegment}
-                      onChange={handleTemplate2ChartHeight("topSegment")}
-                    />
-                  </label>
-                  <label className="ms-field">
-                    <span>Bottom Left Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template2ChartHeights.bottomLeft}
-                      onChange={handleTemplate2ChartHeight("bottomLeft")}
-                    />
-                  </label>
-                  <label className="ms-field">
-                    <span>Bottom Right Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template2ChartHeights.bottomRight}
-                      onChange={handleTemplate2ChartHeight("bottomRight")}
-                    />
-                  </label>
-                </div>
-              ) : null}
-
-              {templateKind === "template3" ? (
-                <div className="ms-preview-settings-row ms-preview-settings-row-3">
-                  <label className="ms-field">
-                    <span>Top Segment Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template3ChartHeights.topSegment}
-                      onChange={handleTemplate3ChartHeight("topSegment")}
-                    />
-                  </label>
-                  <label className="ms-field">
-                    <span>Bottom Left Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template3ChartHeights.bottomLeft}
-                      onChange={handleTemplate3ChartHeight("bottomLeft")}
-                    />
-                  </label>
-                  <label className="ms-field">
-                    <span>Bottom Right Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template3ChartHeights.bottomRight}
-                      onChange={handleTemplate3ChartHeight("bottomRight")}
-                    />
-                  </label>
-                </div>
-              ) : null}
-
-              {templateKind === "template4" ? (
-                <div className="ms-preview-settings-row">
-                  <label className="ms-field">
-                    <span>Top Segment Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template4ChartHeights.topSegment}
-                      onChange={handleTemplate4ChartHeight("topSegment")}
-                    />
-                  </label>
-                  <label className="ms-field">
-                    <span>Bottom Main Chart Height</span>
-                    <Input
-                      type="number"
-                      min={MIN_CHART_HEIGHT}
-                      max={MAX_CHART_HEIGHT}
-                      value={template4ChartHeights.bottomMain}
-                      onChange={handleTemplate4ChartHeight("bottomMain")}
-                    />
-                  </label>
-                </div>
-              ) : null}
-            </details>
-
-            {activeErrors.length > 0 ? (
-              <ul className="ms-errors">
-                {activeErrors.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
-            ) : null}
-
-            {activeWasAutoBalanced ? (
-              <p className="ms-note">Chart heights were auto-balanced to fit the current preview height.</p>
-            ) : null}
-
-              {snapshotContext.truncated ? (
-                <p className="ms-note">Rendering top 10 items for chart/legend stability.</p>
-              ) : null}
-            </section>
-          </details>
-        </section>
-
-        <section className="ms-preview-area ms-preview-area-dual">
-          <div className="ms-preview-stack">
-            {templateKind === "template1" && template1ViewModel ? (
-              <Template1Card
-                ref={previewRef}
-                viewModel={template1ViewModel}
-                unit={unit}
-                width={previewWidth}
-                height={previewHeight}
-                backgroundColor={activeBackgroundColor}
-                density={density}
-                chartHeights={template1Balanced.heights}
-              />
-            ) : null}
-
-            {templateKind === "template2" && template2ViewModel ? (
-              <Template2Card
-                ref={previewRef}
-                viewModel={template2ViewModel}
-                width={previewWidth}
-                height={previewHeight}
-                backgroundColor={activeBackgroundColor}
-                density={density}
-                chartHeights={template2Balanced.heights}
-              />
-            ) : null}
-
-            {templateKind === "template3" && template3ViewModel ? (
-              <Template3Card
-                ref={previewRef}
-                viewModel={template3ViewModel}
-                width={previewWidth}
-                height={previewHeight}
-                backgroundColor={activeBackgroundColor}
-                density={density}
-                chartHeights={template3Balanced.heights}
-              />
-            ) : null}
-
-            {templateKind === "template4" && template4ViewModel ? (
-              <Template4Card
-                ref={previewRef}
-                viewModel={template4ViewModel}
-                width={previewWidth}
-                height={previewHeight}
-                backgroundColor={activeBackgroundColor}
-                density={density}
-                chartHeights={template4Balanced.heights}
-              />
-            ) : null}
-
-            {!snapshotResult.viewModel ? (
-              <div className="ms-preview-placeholder" style={{ width: previewWidth, height: previewHeight }}>
-                Fill required fields and valid mapping to render snapshot preview.
-              </div>
-            ) : null}
-
-            <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
-          </div>
-        </section>
-      </main>
-
-      <footer className="site-footer">
-        <div className="site-footer-inner">
-          <span>
-            Designed by{" "}
-            <a href="https://www.fatmangosolutions.com/" target="_blank" rel="noopener noreferrer">
-              Yashraj Ghosalkar
-            </a>
-          </span>
-          <span className="site-footer-sep">•</span>
-          <span className="site-footer-social">
-            Follow on{" "}
-            <a href="https://www.linkedin.com/in/yashrajghosalkar/" target="_blank" rel="noopener noreferrer">
-              <LinkedInIcon /> LinkedIn
-            </a>
-          </span>
-          <span className="site-footer-sep">•</span>
-          <span>
-            Designed for{" "}
-            <a href="https://www.maximizemarketresearch.com/" target="_blank" rel="noopener noreferrer">
-              MMR
-            </a>
-          </span>
-        </div>
-      </footer>
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
     </div>
   );
 }
@@ -1320,15 +1396,4 @@ function densityStyle(density: DensityMode): CSSProperties {
     ["--density-label-font" as never]: "13px",
     ["--density-row-gap" as never]: "8px",
   } as CSSProperties;
-}
-
-function LinkedInIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-      <path
-        d="M6.94 8.5H3.56V20h3.38V8.5zM5.25 3A1.97 1.97 0 003.3 4.97c0 1.1.86 1.97 1.93 1.97h.02c1.09 0 1.97-.87 1.97-1.97A1.96 1.96 0 005.25 3zM20.7 13.41c0-3.33-1.78-4.88-4.16-4.88-1.92 0-2.78 1.05-3.26 1.79V8.5H9.9c.04 1.22 0 11.5 0 11.5h3.38v-6.42c0-.34.03-.68.13-.92.27-.68.88-1.38 1.9-1.38 1.34 0 1.87 1.02 1.87 2.5V20H20.7v-6.59z"
-        fill="currentColor"
-      />
-    </svg>
-  );
 }
