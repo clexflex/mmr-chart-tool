@@ -50,17 +50,7 @@ export function StackedShareBar({ title, data, chartHeight, density }: StackedSh
             />
             <span
               className="t3-legend-label"
-              style={
-                density === "compact"
-                  ? {
-                      fontSize: "12px",
-                      whiteSpace: "normal",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                    }
-                  : { fontSize: "13px" }
-              }
+              style={responsiveLegendStyle(item.label, density)}
             >
               {item.label}
             </span>
@@ -69,4 +59,24 @@ export function StackedShareBar({ title, data, chartHeight, density }: StackedSh
       </ul>
     </section>
   );
+}
+
+function responsiveLegendStyle(label: string, density: DensityMode) {
+  if (density === "compact") {
+    return {
+      fontSize: "10px",
+      whiteSpace: "normal" as const,
+      overflowWrap: "anywhere" as const,
+      wordBreak: "break-word" as const,
+      lineHeight: 1.15,
+    };
+  }
+
+  return {
+    fontSize: label.length > 22 ? "10px" : label.length > 14 ? "11px" : "12px",
+    whiteSpace: "normal" as const,
+    overflowWrap: "anywhere" as const,
+    wordBreak: "break-word" as const,
+    lineHeight: 1.15,
+  };
 }

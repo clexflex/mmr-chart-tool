@@ -652,9 +652,11 @@ body {
   min-width: 0;
   font-size: var(--density-label-font);
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   color: #1a2a3e;
 }
 
@@ -703,9 +705,11 @@ body {
 
 .t1-pie-legend-label {
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .t2-top-row,
@@ -805,9 +809,11 @@ body {
 .t3-legend-label {
   min-width: 0;
   font-size: var(--density-label-font);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .t3-size-table {
@@ -879,9 +885,11 @@ body {
   font-size: var(--density-label-font);
   text-align: center;
   color: #1b2e4b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .site-footer {
@@ -984,9 +992,9 @@ body {
 .density-compact .t3-legend-label,
 .density-compact .t3-vertical-label {
   white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 10px;
 }
 
 .t1-pie-swatch {

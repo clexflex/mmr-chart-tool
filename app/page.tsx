@@ -80,16 +80,16 @@ const DEFAULT_KNOWN_YEAR_INPUT: KnownYearInput = {
 
 const DEFAULT_SEGMENT_ROWS: SegmentRowInput[] = [
   {
-    id: SEGMENT_PRIMARY_ID,
-    title: "Type",
-    includeInTable: true,
-    linesRaw: "Type1\nType2\nType3\nType4\nType5\nType6",
-  },
-  {
     id: SEGMENT_REGION_ID,
     title: "Region",
     includeInTable: false,
     linesRaw: "Asia Pacific\nNorth America\nEurope\nMiddle East and Africa\nSouth America",
+  },
+  {
+    id: SEGMENT_PRIMARY_ID,
+    title: "Type",
+    includeInTable: true,
+    linesRaw: "Type1\nType2\nType3\nType4\nType5\nType6",
   },
   {
     id: SEGMENT_TERTIARY_ID,

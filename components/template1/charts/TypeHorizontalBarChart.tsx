@@ -26,17 +26,7 @@ export function TypeHorizontalBarChart({
             <span
               className="t1-hbar-label"
               title={item.label}
-              style={
-                density === "compact"
-                  ? {
-                      fontSize: "12px",
-                      whiteSpace: "normal",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                    }
-                  : { fontSize: "13px" }
-              }
+              style={responsiveLabelStyle(item.label, density)}
             >
               {item.label}
             </span>
@@ -51,4 +41,24 @@ export function TypeHorizontalBarChart({
       </div>
     </section>
   );
+}
+
+function responsiveLabelStyle(label: string, density: DensityMode) {
+  if (density === "compact") {
+    return {
+      fontSize: "10px",
+      whiteSpace: "normal" as const,
+      overflowWrap: "anywhere" as const,
+      wordBreak: "break-word" as const,
+      lineHeight: 1.15,
+    };
+  }
+
+  return {
+    fontSize: label.length > 24 ? "10px" : label.length > 16 ? "11px" : "12px",
+    whiteSpace: "normal" as const,
+    overflowWrap: "anywhere" as const,
+    wordBreak: "break-word" as const,
+    lineHeight: 1.15,
+  };
 }

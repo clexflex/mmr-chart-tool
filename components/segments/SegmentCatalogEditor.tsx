@@ -1,6 +1,5 @@
 import type { SegmentRowInput } from "@/lib/template1/types";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -10,6 +9,8 @@ type SegmentCatalogEditorProps = {
 };
 
 export function SegmentCatalogEditor({ rows, onRowsChange }: SegmentCatalogEditorProps) {
+  const orderedRows = orderRegionFirst(rows);
+
   const addRow = () => {
     const next = [
       ...rows,
@@ -41,7 +42,7 @@ export function SegmentCatalogEditor({ rows, onRowsChange }: SegmentCatalogEdito
       </div>
 
       <div className="ms-segment-list">
-        {rows.map((row, index) => {
+        {orderedRows.map((row, index) => {
           return (
             <article className="ms-segment-card" key={row.id}>
               <div className="ms-segment-card-head">
@@ -62,17 +63,6 @@ export function SegmentCatalogEditor({ rows, onRowsChange }: SegmentCatalogEdito
                   <span>Segment Title</span>
                   <Input value={row.title} onChange={(event) => updateRow(row.id, { title: event.target.value })} />
                 </label>
-
-                <label className="ms-field ms-check-field">
-                  <span>Include in Table</span>
-                  <label className="ms-inline-check">
-                    <Checkbox
-                      checked={row.includeInTable}
-                      onCheckedChange={(checked) => updateRow(row.id, { includeInTable: checked === true })}
-                    />
-                    Include this segment row
-                  </label>
-                </label>
               </div>
 
               <label className="ms-field ms-field-full">
@@ -89,4 +79,16 @@ export function SegmentCatalogEditor({ rows, onRowsChange }: SegmentCatalogEdito
       </div>
     </section>
   );
+}
+
+function orderRegionFirst(rows: SegmentRowInput[]): SegmentRowInput[] {
+  const firstRegionIndex = rows.findIndex((row) => /(region|country|geograph|state|area)/i.test(row.title));
+  if (firstRegionIndex <= 0) {
+    return rows;
+  }
+
+  const ordered = [...rows];
+  const [regionRow] = ordered.splice(firstRegionIndex, 1);
+  ordered.unshift(regionRow);
+  return ordered;
 }

@@ -12,7 +12,7 @@ export function buildSegmentationTableViewModel(input: UnifiedMarketInput): Segm
       if (isRegion) {
         return input.includeRegionInTable;
       }
-      return row.includeInTable;
+      return true;
     })
     .map((row) => ({
       title: row.title,

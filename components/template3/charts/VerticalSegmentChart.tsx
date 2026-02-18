@@ -23,17 +23,7 @@ export function VerticalSegmentChart({ title, data, chartHeight, density }: Vert
               </div>
               <span
                 className="t3-vertical-label"
-                style={
-                  density === "compact"
-                    ? {
-                        fontSize: "12px",
-                        whiteSpace: "normal",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }
-                    : { fontSize: "13px" }
-                }
+                style={responsiveLabelStyle(item.label, density)}
               >
                 {item.label}
               </span>
@@ -43,4 +33,24 @@ export function VerticalSegmentChart({ title, data, chartHeight, density }: Vert
       </div>
     </section>
   );
+}
+
+function responsiveLabelStyle(label: string, density: DensityMode) {
+  if (density === "compact") {
+    return {
+      fontSize: "10px",
+      whiteSpace: "normal" as const,
+      overflowWrap: "anywhere" as const,
+      wordBreak: "break-word" as const,
+      lineHeight: 1.15,
+    };
+  }
+
+  return {
+    fontSize: label.length > 18 ? "10px" : label.length > 12 ? "11px" : "12px",
+    whiteSpace: "normal" as const,
+    overflowWrap: "anywhere" as const,
+    wordBreak: "break-word" as const,
+    lineHeight: 1.15,
+  };
 }

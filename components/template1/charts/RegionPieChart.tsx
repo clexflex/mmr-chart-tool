@@ -71,17 +71,7 @@ export function RegionPieChart({ title, data, chartHeight, density }: RegionPieC
               <span
                 className="t1-pie-legend-label"
                 title={item.label}
-                style={
-                  density === "compact"
-                    ? {
-                        fontSize: "12px",
-                        whiteSpace: "normal",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }
-                    : { fontSize: "13px" }
-                }
+                style={responsiveLegendStyle(item.label, density)}
               >
                 {item.label}
               </span>
@@ -91,6 +81,26 @@ export function RegionPieChart({ title, data, chartHeight, density }: RegionPieC
       </div>
     </section>
   );
+}
+
+function responsiveLegendStyle(label: string, density: DensityMode) {
+  if (density === "compact") {
+    return {
+      fontSize: "10px",
+      whiteSpace: "normal" as const,
+      overflowWrap: "anywhere" as const,
+      wordBreak: "break-word" as const,
+      lineHeight: 1.15,
+    };
+  }
+
+  return {
+    fontSize: label.length > 22 ? "10px" : label.length > 14 ? "11px" : "12px",
+    whiteSpace: "normal" as const,
+    overflowWrap: "anywhere" as const,
+    wordBreak: "break-word" as const,
+    lineHeight: 1.15,
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {
