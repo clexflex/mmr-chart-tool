@@ -1,35 +1,42 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { SegmentationTablePreview } from "@/components/segmentation-table/SegmentationTablePreview";
+import { TableStyleToggle } from "@/components/segmentation-table/TableStyleToggle";
+import { SegmentCatalogEditor } from "@/components/segments/SegmentCatalogEditor";
+import { SegmentMappingControls } from "@/components/segments/SegmentMappingControls";
 import { Template1Card } from "@/components/template1/Template1Card";
 import { Template2Card } from "@/components/template2/Template2Card";
 import { Template3Card } from "@/components/template3/Template3Card";
 import { Template4Card } from "@/components/template4/Template4Card";
 import { downloadElementAsWebp } from "@/lib/export/downloadWebp";
+import { deriveMarketSizes, resetDerivedOverrides } from "@/lib/market/deriveMarketSizes";
+import { resolveChartSeries } from "@/lib/snapshot/resolveChartSeries";
+import { buildSegmentationTableViewModel } from "@/lib/table/buildSegmentationTableViewModel";
+import { renderSegmentationTableHtml } from "@/lib/table/renderSegmentationTableHtml";
 import { buildTemplate1ViewModel } from "@/lib/template1/generateData";
-import { segmentLimit } from "@/lib/template1/parseInputs";
-import type { DensityMode, SnapshotFormInput } from "@/lib/template1/types";
 import { buildTemplate2ViewModel } from "@/lib/template2/generateData";
 import { buildTemplate3ViewModel } from "@/lib/template3/generateData";
 import { buildTemplate4ViewModel } from "@/lib/template4/generateData";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type {
+  ChartTemplateKind,
+  DensityMode,
+  DerivedMarketSizes,
+  KnownYearInput,
+  SegmentRowInput,
+  SnapshotChartMapping,
+  SnapshotFormInput,
+  TableStyleMode,
+  UnifiedMarketInput,
+} from "@/lib/template1/types";
 
-const DEFAULT_FORM: SnapshotFormInput = {
-  marketTitle: "Global Market",
-  cagrPercent: 4.5,
-  dominantRegion: "Asia Pacific",
-  marketSize2025: 5,
-  marketSize2032: 10,
-  unit: "USD Billion",
-  forecastPeriod: "2026-2032",
-  primarySegmentTitle: "Type",
-  secondarySegmentTitle: "Region",
-  tertiarySegmentTitle: "Application",
-  typeSegmentsRaw: "Type1\nType2\nType3\nType4\nType5\nType6",
-  regionSegmentsRaw: "Asia Pacific\nNorth America\nEurope\nMiddle East and Africa\nSouth America",
-  tertiarySegmentsRaw: "Application1\nApplication2\nApplication3\nApplication4\nApplication5",
-};
-
-type TemplateKind = "template1" | "template2" | "template3" | "template4";
+const SEGMENT_PRIMARY_ID = "segment-primary";
+const SEGMENT_REGION_ID = "segment-region";
+const SEGMENT_TERTIARY_ID = "segment-tertiary";
 
 type Template1ChartHeights = {
   yearlyPlot: number;
@@ -65,6 +72,54 @@ const DEFAULT_TEMPLATE4_CHART_HEIGHTS: Template4ChartHeights = {
   bottomMain: 240,
 };
 
+const DEFAULT_KNOWN_YEAR_INPUT: KnownYearInput = {
+  knownYear: 2025,
+  knownMarketSize: 5,
+  cagrPercent: 4.5,
+};
+
+const DEFAULT_SEGMENT_ROWS: SegmentRowInput[] = [
+  {
+    id: SEGMENT_PRIMARY_ID,
+    title: "Type",
+    includeInTable: true,
+    linesRaw: "Type1\nType2\nType3\nType4\nType5\nType6",
+  },
+  {
+    id: SEGMENT_REGION_ID,
+    title: "Region",
+    includeInTable: false,
+    linesRaw: "Asia Pacific\nNorth America\nEurope\nMiddle East and Africa\nSouth America",
+  },
+  {
+    id: SEGMENT_TERTIARY_ID,
+    title: "Application",
+    includeInTable: true,
+    linesRaw: "Application1\nApplication2\nApplication3\nApplication4\nApplication5",
+  },
+];
+
+const DEFAULT_MAPPING: SnapshotChartMapping = {
+  template1: {
+    typeSegmentId: SEGMENT_PRIMARY_ID,
+    regionSegmentId: SEGMENT_REGION_ID,
+  },
+  template2: {
+    topStackSegmentId: SEGMENT_REGION_ID,
+    pieSegmentId: SEGMENT_TERTIARY_ID,
+    horizontalSegmentId: SEGMENT_PRIMARY_ID,
+  },
+  template3: {
+    topStackSegmentId: SEGMENT_REGION_ID,
+    pieSegmentId: SEGMENT_TERTIARY_ID,
+    verticalSegmentId: SEGMENT_PRIMARY_ID,
+  },
+  template4: {
+    topStackSegmentId: SEGMENT_REGION_ID,
+    verticalSegmentId: SEGMENT_PRIMARY_ID,
+  },
+};
+
 const MIN_PREVIEW_WIDTH = 600;
 const MIN_PREVIEW_HEIGHT = 420;
 const MAX_PREVIEW_SIZE = 900;
@@ -76,11 +131,28 @@ const TEMPLATE3_OVERHEAD = 198;
 const TEMPLATE4_OVERHEAD = 186;
 
 export default function Home() {
-  const [templateKind, setTemplateKind] = useState<TemplateKind>("template1");
+  const [templateKind, setTemplateKind] = useState<ChartTemplateKind>("template1");
   const [density, setDensity] = useState<DensityMode>("spacious");
-  const [form, setForm] = useState<SnapshotFormInput>(DEFAULT_FORM);
+  const [marketTitle, setMarketTitle] = useState("Global Market");
+  const [dominantRegion, setDominantRegion] = useState("Asia Pacific");
+  const [unit, setUnit] = useState("USD Billion");
+
+  const [knownYearInput, setKnownYearInput] = useState<KnownYearInput>(DEFAULT_KNOWN_YEAR_INPUT);
+  const [derived, setDerived] = useState<DerivedMarketSizes>(() => deriveMarketSizes(DEFAULT_KNOWN_YEAR_INPUT));
+
+  const [forecastPeriod, setForecastPeriod] = useState("2026-2032");
+  const [baseYear, setBaseYear] = useState(2025);
+  const [historicalDataText, setHistoricalDataText] = useState("2020 to 2025");
+
+  const [segmentRows, setSegmentRows] = useState<SegmentRowInput[]>(DEFAULT_SEGMENT_ROWS);
+  const [mapping, setMapping] = useState<SnapshotChartMapping>(DEFAULT_MAPPING);
+
+  const [tableStyleMode, setTableStyleMode] = useState<TableStyleMode>("legacy");
+  const [includeRegionInTable, setIncludeRegionInTable] = useState(false);
+
   const [previewWidth, setPreviewWidth] = useState(900);
   const [previewHeight, setPreviewHeight] = useState(580);
+
   const [template1ChartHeights, setTemplate1ChartHeights] =
     useState<Template1ChartHeights>(DEFAULT_TEMPLATE1_CHART_HEIGHTS);
   const [template2ChartHeights, setTemplate2ChartHeights] =
@@ -89,15 +161,102 @@ export default function Home() {
     useState<SplitChartHeights>(DEFAULT_SPLIT_CHART_HEIGHTS);
   const [template4ChartHeights, setTemplate4ChartHeights] =
     useState<Template4ChartHeights>(DEFAULT_TEMPLATE4_CHART_HEIGHTS);
+
   const [useSolidBackground, setUseSolidBackground] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState("#e7e7e7");
   const [isExporting, setIsExporting] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
 
-  const template1Result = useMemo(() => buildTemplate1ViewModel(form), [form]);
-  const template2Result = useMemo(() => buildTemplate2ViewModel(form), [form]);
-  const template3Result = useMemo(() => buildTemplate3ViewModel(form), [form]);
-  const template4Result = useMemo(() => buildTemplate4ViewModel(form), [form]);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
+
+  const unifiedInput: UnifiedMarketInput = useMemo(
+    () => ({
+      marketTitle,
+      dominantRegion,
+      unit,
+      knownYearInput,
+      derived,
+      reportCoverage: {
+        baseYear,
+        historicalDataText,
+        forecastPeriod,
+      },
+      segmentRows,
+      mapping,
+      includeRegionInTable,
+      tableStyleMode,
+      previewWidth,
+      previewHeight,
+      density,
+      templateKind,
+    }),
+    [
+      marketTitle,
+      dominantRegion,
+      unit,
+      knownYearInput,
+      derived,
+      baseYear,
+      historicalDataText,
+      forecastPeriod,
+      segmentRows,
+      mapping,
+      includeRegionInTable,
+      tableStyleMode,
+      previewWidth,
+      previewHeight,
+      density,
+      templateKind,
+    ]
+  );
+
+  const mappingValidationMessage = useMemo(
+    () => validateMapping(templateKind, mapping, segmentRows),
+    [templateKind, mapping, segmentRows]
+  );
+
+  const snapshotContext = useMemo(
+    () => buildSnapshotContext(unifiedInput),
+    [unifiedInput]
+  );
+
+  const snapshotResult = useMemo(() => {
+    if (!snapshotContext.formInput) {
+      return {
+        viewModel: null,
+        errors: snapshotContext.errors,
+      };
+    }
+
+    const baseErrors = [...snapshotContext.errors];
+    if (mappingValidationMessage) {
+      baseErrors.push(mappingValidationMessage);
+    }
+    const derivedErrors = validateUnifiedInput(unifiedInput);
+    const combined = [...baseErrors, ...derivedErrors];
+
+    if (templateKind === "template1") {
+      const result = buildTemplate1ViewModel(snapshotContext.formInput);
+      return { viewModel: result.viewModel, errors: [...combined, ...result.errors] };
+    }
+
+    if (templateKind === "template2") {
+      const result = buildTemplate2ViewModel(snapshotContext.formInput);
+      return { viewModel: result.viewModel, errors: [...combined, ...result.errors] };
+    }
+
+    if (templateKind === "template3") {
+      const result = buildTemplate3ViewModel(snapshotContext.formInput);
+      return { viewModel: result.viewModel, errors: [...combined, ...result.errors] };
+    }
+
+    const result = buildTemplate4ViewModel(snapshotContext.formInput);
+    return { viewModel: result.viewModel, errors: [...combined, ...result.errors] };
+  }, [mappingValidationMessage, snapshotContext, templateKind, unifiedInput]);
+
+  const tableViewModel = useMemo(() => buildSegmentationTableViewModel(unifiedInput), [unifiedInput]);
+  const tableHtml = useMemo(() => renderSegmentationTableHtml(tableViewModel), [tableViewModel]);
 
   const template1Balanced = useMemo(
     () => autoBalanceTemplate1(previewHeight, template1ChartHeights),
@@ -117,16 +276,26 @@ export default function Home() {
   );
 
   const activeBackgroundColor = useSolidBackground ? backgroundColor : "transparent";
-  const activeResult =
+  const activeErrors = snapshotResult.errors;
+  const activeViewModel = snapshotResult.viewModel;
+
+  const template1ViewModel =
     templateKind === "template1"
-      ? template1Result
-      : templateKind === "template2"
-      ? template2Result
-      : templateKind === "template3"
-      ? template3Result
-      : template4Result;
-  const activeErrors = activeResult.errors;
-  const activeViewModel = activeResult.viewModel;
+      ? (snapshotResult.viewModel as ReturnType<typeof buildTemplate1ViewModel>["viewModel"])
+      : null;
+  const template2ViewModel =
+    templateKind === "template2"
+      ? (snapshotResult.viewModel as ReturnType<typeof buildTemplate2ViewModel>["viewModel"])
+      : null;
+  const template3ViewModel =
+    templateKind === "template3"
+      ? (snapshotResult.viewModel as ReturnType<typeof buildTemplate3ViewModel>["viewModel"])
+      : null;
+  const template4ViewModel =
+    templateKind === "template4"
+      ? (snapshotResult.viewModel as ReturnType<typeof buildTemplate4ViewModel>["viewModel"])
+      : null;
+
   const activeWasAutoBalanced =
     templateKind === "template1"
       ? template1Balanced.wasAutoBalanced
@@ -136,20 +305,37 @@ export default function Home() {
       ? template3Balanced.wasAutoBalanced
       : template4Balanced.wasAutoBalanced;
 
-  const showTertiary = templateKind === "template2" || templateKind === "template3";
-
-  const updateText =
-    (field: keyof SnapshotFormInput) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm((current) => ({ ...current, [field]: event.target.value }));
-    };
-
-  const updateNumber =
-    (field: keyof SnapshotFormInput) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((current) => ({
+  const handleKnownYearInputChange = (field: keyof KnownYearInput, value: number) => {
+    setKnownYearInput((current) => {
+      const next = {
         ...current,
-        [field]: event.target.value === "" ? Number.NaN : Number(event.target.value),
+        [field]: Number.isFinite(value) ? value : Number.NaN,
+      };
+
+      const recalculated = deriveMarketSizes(next);
+      setDerived((currentDerived) => ({
+        marketSize2025: currentDerived.is2025Overridden ? currentDerived.marketSize2025 : recalculated.marketSize2025,
+        marketSize2032: currentDerived.is2032Overridden ? currentDerived.marketSize2032 : recalculated.marketSize2032,
+        is2025Overridden: currentDerived.is2025Overridden,
+        is2032Overridden: currentDerived.is2032Overridden,
       }));
-    };
+
+      return next;
+    });
+  };
+
+  const handleDerivedValueChange = (field: "marketSize2025" | "marketSize2032", value: number) => {
+    setDerived((current) => ({
+      ...current,
+      [field]: Number.isFinite(value) ? value : Number.NaN,
+      is2025Overridden: field === "marketSize2025" ? true : current.is2025Overridden,
+      is2032Overridden: field === "marketSize2032" ? true : current.is2032Overridden,
+    }));
+  };
+
+  const handleRecalculate = () => {
+    setDerived(resetDerivedOverrides(knownYearInput));
+  };
 
   const handlePreviewDimension =
     (setter: React.Dispatch<React.SetStateAction<number>>, min: number, max: number) =>
@@ -207,8 +393,10 @@ export default function Home() {
     setIsExporting(true);
     try {
       await downloadElementAsWebp(previewRef.current, {
-        fileName: `market-snapshot-${templateKind}.webp`,
+        fileName: buildSnapshotFileName(marketTitle),
         pixelRatio: 1,
+        quality: 0.78,
+        maxFileSizeKb: 30,
         width: previewWidth,
         height: previewHeight,
       });
@@ -217,37 +405,86 @@ export default function Home() {
     }
   };
 
+  const handleCopyHtml = async () => {
+    try {
+      await navigator.clipboard.writeText(tableHtml);
+      setCopyStatus("copied");
+      setTimeout(() => setCopyStatus("idle"), 1500);
+    } catch {
+      setCopyStatus("failed");
+      setTimeout(() => setCopyStatus("idle"), 1500);
+    }
+  };
+
+  const handleClearAll = () => {
+    setTemplateKind("template1");
+    setDensity("spacious");
+    setMarketTitle("Global Market");
+    setDominantRegion("Asia Pacific");
+    setUnit("USD Billion");
+    setKnownYearInput(DEFAULT_KNOWN_YEAR_INPUT);
+    setDerived(deriveMarketSizes(DEFAULT_KNOWN_YEAR_INPUT));
+    setForecastPeriod("2026-2032");
+    setBaseYear(2025);
+    setHistoricalDataText("2020 to 2025");
+    setSegmentRows(DEFAULT_SEGMENT_ROWS);
+    setMapping(DEFAULT_MAPPING);
+    setTableStyleMode("legacy");
+    setIncludeRegionInTable(false);
+    setPreviewWidth(900);
+    setPreviewHeight(580);
+    setTemplate1ChartHeights(DEFAULT_TEMPLATE1_CHART_HEIGHTS);
+    setTemplate2ChartHeights(DEFAULT_SPLIT_CHART_HEIGHTS);
+    setTemplate3ChartHeights(DEFAULT_SPLIT_CHART_HEIGHTS);
+    setTemplate4ChartHeights(DEFAULT_TEMPLATE4_CHART_HEIGHTS);
+    setUseSolidBackground(false);
+    setBackgroundColor("#e7e7e7");
+    setCopyStatus("idle");
+  };
+
+  useEffect(() => {
+    if (useSolidBackground) {
+      colorInputRef.current?.focus();
+    }
+  }, [useSolidBackground]);
+
   return (
     <div className={`app-shell density-${density}`} style={densityStyle(density)}>
-      <main className="ms-page">
-        <section className="ms-panel">
-          <h1 className="ms-heading">MMR Market Snapshot Builder</h1>
-          <p className="ms-subheading">Template-driven snapshot preview and WebP export</p>
+      <header className="ms-workspace-header">
+        <div className="ms-workspace-topbar">
+          <div className="ms-workspace-status">
+            <span>Snapshot Workspace</span>
+            <span>{templateKind.replace("template", "Template ")}</span>
+          </div>
 
-          <div className="ms-preview-settings">
-            <div className="ms-preview-settings-row ms-preview-settings-row-3">
+          <div className="ms-workspace-actions">
+            <Button
+              type="button"
+              className="ms-download-btn"
+              onClick={handleDownload}
+              disabled={!activeViewModel || activeErrors.length > 0 || isExporting}
+            >
+              {isExporting ? "Generating WebP..." : "Download Snapshot WebP"}
+            </Button>
+            <Button type="button" variant="outline" className="ms-secondary-btn ms-copy-btn" onClick={handleCopyHtml}>
+              {copyStatus === "copied"
+                ? "HTML Copied"
+                : copyStatus === "failed"
+                ? "Copy Failed"
+                : "Copy Segmentation HTML"}
+            </Button>
+            <Button type="button" variant="outline" className="ms-secondary-btn" onClick={handleClearAll}>
+              Clear All Inputs
+            </Button>
+          </div>
+        </div>
+        <details className="ms-workspace-settings">
+          <summary>Workspace Settings</summary>
+          <div className="ms-workspace-grid">
+            <div className="ms-workspace-controls">
               <label className="ms-field">
-                <span>Template</span>
-                <select
-                  value={templateKind}
-                  onChange={(event) => setTemplateKind(event.target.value as TemplateKind)}
-                >
-                  <option value="template1">Template 1</option>
-                  <option value="template2">Template 2</option>
-                  <option value="template3">Template 3</option>
-                  <option value="template4">Template 4</option>
-                </select>
-              </label>
-              <label className="ms-field">
-                <span>Density Mode</span>
-                <select value={density} onChange={(event) => setDensity(event.target.value as DensityMode)}>
-                  <option value="compact">Compact</option>
-                  <option value="spacious">Spacious</option>
-                </select>
-              </label>
-              <label className="ms-field">
-                <span>Preview Width (px)</span>
-                <input
+                <span>Preview Width</span>
+                <Input
                   type="number"
                   min={MIN_PREVIEW_WIDTH}
                   max={MAX_PREVIEW_SIZE}
@@ -255,12 +492,9 @@ export default function Home() {
                   onChange={handlePreviewDimension(setPreviewWidth, MIN_PREVIEW_WIDTH, MAX_PREVIEW_SIZE)}
                 />
               </label>
-            </div>
-
-            <div className="ms-preview-settings-row ms-preview-settings-row-3">
               <label className="ms-field">
-                <span>Preview Height (px)</span>
-                <input
+                <span>Preview Height</span>
+                <Input
                   type="number"
                   min={MIN_PREVIEW_HEIGHT}
                   max={MAX_PREVIEW_SIZE}
@@ -271,33 +505,205 @@ export default function Home() {
               <label className="ms-field ms-check-field">
                 <span>Background Fill</span>
                 <label className="ms-inline-check">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={useSolidBackground}
-                    onChange={(event) => setUseSolidBackground(event.target.checked)}
+                    onCheckedChange={(checked) => setUseSolidBackground(checked === true)}
                   />
-                  Use solid background
+                  Use solid
                 </label>
               </label>
-              <label className="ms-field">
-                <span>Background Color</span>
-                <input
-                  className="ms-color-input"
-                  type="color"
-                  value={backgroundColor}
-                  onChange={(event) => setBackgroundColor(event.target.value)}
-                  disabled={!useSolidBackground}
-                />
-              </label>
+              {useSolidBackground ? (
+                <label className="ms-field">
+                  <span>Background Color</span>
+                  <input
+                    ref={colorInputRef}
+                    className="ms-color-input"
+                    type="color"
+                    value={backgroundColor}
+                    onChange={(event) => setBackgroundColor(event.target.value)}
+                  />
+                </label>
+              ) : null}
             </div>
 
-            <details className="ms-advanced-settings">
+            <div className="ms-workspace-derivation">
+              <label className="ms-field">
+                <span>Known Year</span>
+                <Input
+                  type="number"
+                  value={Number.isFinite(knownYearInput.knownYear) ? knownYearInput.knownYear : ""}
+                  onChange={(event) => handleKnownYearInputChange("knownYear", Number(event.target.value))}
+                />
+              </label>
+              <label className="ms-field">
+                <span>Known Size</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={Number.isFinite(knownYearInput.knownMarketSize) ? knownYearInput.knownMarketSize : ""}
+                  onChange={(event) => handleKnownYearInputChange("knownMarketSize", Number(event.target.value))}
+                />
+              </label>
+              <label className="ms-field">
+                <span>CAGR (%)</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={Number.isFinite(knownYearInput.cagrPercent) ? knownYearInput.cagrPercent : ""}
+                  onChange={(event) => handleKnownYearInputChange("cagrPercent", Number(event.target.value))}
+                />
+              </label>
+              <label className="ms-field">
+                <span>Size 2025</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={Number.isFinite(derived.marketSize2025) ? derived.marketSize2025 : ""}
+                  onChange={(event) => handleDerivedValueChange("marketSize2025", Number(event.target.value))}
+                />
+              </label>
+              <label className="ms-field">
+                <span>Size 2032</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
+                  onChange={(event) => handleDerivedValueChange("marketSize2032", Number(event.target.value))}
+                />
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                className="ms-secondary-btn ms-recalculate-btn"
+                onClick={handleRecalculate}
+              >
+                Recalculate
+              </Button>
+            </div>
+          </div>
+        </details>
+      </header>
+      <main className="ms-page">
+        <section className="ms-panel">
+          <details className="ms-collapsible" open>
+            <summary>1. Market Basics</summary>
+            <section className="ms-section-block">
+              <div className="ms-form-grid ms-form-grid-3">
+              <label className="ms-field">
+                <span>Template</span>
+                <Select value={templateKind} onValueChange={(value) => setTemplateKind(value as ChartTemplateKind)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="template1">Template 1</SelectItem>
+                    <SelectItem value="template2">Template 2</SelectItem>
+                    <SelectItem value="template3">Template 3</SelectItem>
+                    <SelectItem value="template4">Template 4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+
+              <label className="ms-field">
+                <span>Density Mode</span>
+                <Select value={density} onValueChange={(value) => setDensity(value as DensityMode)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select density mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="compact">Compact</SelectItem>
+                    <SelectItem value="spacious">Spacious</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+
+              <TableStyleToggle value={tableStyleMode} onChange={setTableStyleMode} />
+
+              <label className="ms-field">
+                <span>Market Title</span>
+                <Input value={marketTitle} onChange={(event) => setMarketTitle(event.target.value)} />
+              </label>
+
+              <label className="ms-field">
+                <span>Dominating Region/Country</span>
+                <Input value={dominantRegion} onChange={(event) => setDominantRegion(event.target.value)} />
+              </label>
+
+              <label className="ms-field">
+                <span>Unit of Market Size</span>
+                <Input value={unit} onChange={(event) => setUnit(event.target.value)} />
+              </label>
+              </div>
+            </section>
+          </details>
+
+          <details className="ms-collapsible" open>
+            <summary>2. Report Coverage</summary>
+            <section className="ms-section-block">
+              <div className="ms-form-grid ms-form-grid-3">
+              <label className="ms-field">
+                <span>Base Year</span>
+                <Input
+                  type="number"
+                  value={Number.isFinite(baseYear) ? baseYear : ""}
+                  onChange={(event) => setBaseYear(Number(event.target.value))}
+                />
+              </label>
+
+              <label className="ms-field">
+                <span>Forecast Period</span>
+                <Input value={forecastPeriod} onChange={(event) => setForecastPeriod(event.target.value)} />
+              </label>
+
+              <label className="ms-field ms-check-field">
+                <span>Region in Table</span>
+                <label className="ms-inline-check">
+                  <Checkbox
+                    checked={includeRegionInTable}
+                    onCheckedChange={(checked) => setIncludeRegionInTable(checked === true)}
+                  />
+                  Include region/country segments
+                </label>
+              </label>
+
+              <label className="ms-field ms-field-full">
+                <span>Historical Data</span>
+                <Input value={historicalDataText} onChange={(event) => setHistoricalDataText(event.target.value)} />
+              </label>
+              </div>
+            </section>
+          </details>
+
+          <details className="ms-collapsible" open>
+            <summary>3. Segment Catalog</summary>
+            <SegmentCatalogEditor rows={segmentRows} onRowsChange={setSegmentRows} />
+          </details>
+
+          <details className="ms-collapsible" open>
+            <summary>4. Snapshot Mapping</summary>
+            <SegmentMappingControls
+              templateKind={templateKind}
+              mapping={mapping}
+              rows={segmentRows}
+              onMappingChange={setMapping}
+              invalidMessage={mappingValidationMessage}
+            />
+          </details>
+
+          <details className="ms-collapsible">
+            <summary>5. Advanced Chart Layout</summary>
+            <section className="ms-section-block">
+              <p className="ms-hint">
+                Workspace controls (preview size, background, export, clear) are in the top header for faster multi-market work.
+              </p>
+
+              <details className="ms-advanced-settings" open>
               <summary>Advanced chart sizing</summary>
               {templateKind === "template1" ? (
                 <div className="ms-preview-settings-row ms-preview-settings-row-3">
                   <label className="ms-field">
                     <span>Yearly Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -307,7 +713,7 @@ export default function Home() {
                   </label>
                   <label className="ms-field">
                     <span>Type Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -317,7 +723,7 @@ export default function Home() {
                   </label>
                   <label className="ms-field">
                     <span>Region Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -332,7 +738,7 @@ export default function Home() {
                 <div className="ms-preview-settings-row ms-preview-settings-row-3">
                   <label className="ms-field">
                     <span>Top Segment Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -342,7 +748,7 @@ export default function Home() {
                   </label>
                   <label className="ms-field">
                     <span>Bottom Left Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -352,7 +758,7 @@ export default function Home() {
                   </label>
                   <label className="ms-field">
                     <span>Bottom Right Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -367,7 +773,7 @@ export default function Home() {
                 <div className="ms-preview-settings-row ms-preview-settings-row-3">
                   <label className="ms-field">
                     <span>Top Segment Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -377,7 +783,7 @@ export default function Home() {
                   </label>
                   <label className="ms-field">
                     <span>Bottom Left Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -387,7 +793,7 @@ export default function Home() {
                   </label>
                   <label className="ms-field">
                     <span>Bottom Right Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -402,7 +808,7 @@ export default function Home() {
                 <div className="ms-preview-settings-row">
                   <label className="ms-field">
                     <span>Top Segment Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -412,7 +818,7 @@ export default function Home() {
                   </label>
                   <label className="ms-field">
                     <span>Bottom Main Chart Height</span>
-                    <input
+                    <Input
                       type="number"
                       min={MIN_CHART_HEIGHT}
                       max={MAX_CHART_HEIGHT}
@@ -423,236 +829,349 @@ export default function Home() {
                 </div>
               ) : null}
             </details>
-          </div>
 
-          <div className="ms-form-grid">
-            <label className="ms-field">
-              <span>Market Title</span>
-              <input value={form.marketTitle} onChange={updateText("marketTitle")} />
-            </label>
-
-            <label className="ms-field">
-              <span>CAGR (%)</span>
-              <input
-                type="number"
-                step="0.01"
-                value={Number.isNaN(form.cagrPercent) ? "" : form.cagrPercent}
-                onChange={updateNumber("cagrPercent")}
-              />
-            </label>
-
-            <label className="ms-field">
-              <span>Dominating Region/Country</span>
-              <input value={form.dominantRegion} onChange={updateText("dominantRegion")} />
-            </label>
-
-            <label className="ms-field">
-              <span>Forecast Period</span>
-              <input value={form.forecastPeriod} onChange={updateText("forecastPeriod")} />
-            </label>
-
-            <label className="ms-field">
-              <span>Market Size (2025)</span>
-              <input
-                type="number"
-                step="0.01"
-                value={Number.isNaN(form.marketSize2025) ? "" : form.marketSize2025}
-                onChange={updateNumber("marketSize2025")}
-              />
-            </label>
-
-            <label className="ms-field">
-              <span>Market Size (2032)</span>
-              <input
-                type="number"
-                step="0.01"
-                value={Number.isNaN(form.marketSize2032) ? "" : form.marketSize2032}
-                onChange={updateNumber("marketSize2032")}
-              />
-            </label>
-
-            <label className="ms-field">
-              <span>Primary Segment Title</span>
-              <input value={form.primarySegmentTitle} onChange={updateText("primarySegmentTitle")} />
-            </label>
-
-            <label className="ms-field">
-              <span>Secondary Segment Title</span>
-              <input value={form.secondarySegmentTitle} onChange={updateText("secondarySegmentTitle")} />
-            </label>
-
-            {showTertiary ? (
-              <label className="ms-field ms-field-full">
-                <span>Tertiary Segment Title</span>
-                <input value={form.tertiarySegmentTitle} onChange={updateText("tertiarySegmentTitle")} />
-              </label>
+            {activeErrors.length > 0 ? (
+              <ul className="ms-errors">
+                {activeErrors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
             ) : null}
 
-            <label className="ms-field ms-field-full">
-              <span>Unit of Market Size</span>
-              <input value={form.unit} onChange={updateText("unit")} />
-            </label>
-
-            <label className="ms-field ms-field-full">
-              <span>
-                {form.primarySegmentTitle || "Primary"} Segments (comma/newline separated, top {segmentLimit()} rendered)
-              </span>
-              <textarea rows={4} value={form.typeSegmentsRaw} onChange={updateText("typeSegmentsRaw")} />
-            </label>
-
-            <label className="ms-field ms-field-full">
-              <span>
-                {form.secondarySegmentTitle || "Secondary"} Segments (comma/newline separated, top {segmentLimit()} rendered)
-              </span>
-              <textarea rows={4} value={form.regionSegmentsRaw} onChange={updateText("regionSegmentsRaw")} />
-            </label>
-
-            {showTertiary ? (
-              <label className="ms-field ms-field-full">
-                <span>
-                  {form.tertiarySegmentTitle || "Tertiary"} Segments (comma/newline separated, top {segmentLimit()} rendered)
-                </span>
-                <textarea rows={4} value={form.tertiarySegmentsRaw} onChange={updateText("tertiarySegmentsRaw")} />
-              </label>
+            {activeWasAutoBalanced ? (
+              <p className="ms-note">Chart heights were auto-balanced to fit the current preview height.</p>
             ) : null}
-          </div>
 
-          {activeErrors.length > 0 ? (
-            <ul className="ms-errors">
-              {activeErrors.map((error) => (
-                <li key={error}>{error}</li>
-              ))}
-            </ul>
-          ) : null}
-
-          {activeWasAutoBalanced ? (
-            <p className="ms-note">Chart heights were auto-balanced to fit the current preview height.</p>
-          ) : null}
-
-          {showTruncationNote(templateKind, template1Result.viewModel, template2Result.viewModel, template3Result.viewModel, template4Result.viewModel) ? (
-            <p className="ms-note">Rendering top {segmentLimit()} items for chart/legend stability.</p>
-          ) : null}
-
-          <button
-            type="button"
-            className="ms-download-btn"
-            onClick={handleDownload}
-            disabled={!activeViewModel || activeErrors.length > 0 || isExporting}
-          >
-            {isExporting ? "Generating WebP..." : "Download WebP"}
-          </button>
+              {snapshotContext.truncated ? (
+                <p className="ms-note">Rendering top 10 items for chart/legend stability.</p>
+              ) : null}
+            </section>
+          </details>
         </section>
 
-        <section className="ms-preview-area">
-          {templateKind === "template1" && template1Result.viewModel ? (
-            <Template1Card
-              ref={previewRef}
-              viewModel={template1Result.viewModel}
-              unit={form.unit}
-              width={previewWidth}
-              height={previewHeight}
-              backgroundColor={activeBackgroundColor}
-              density={density}
-              chartHeights={template1Balanced.heights}
-            />
-          ) : null}
+        <section className="ms-preview-area ms-preview-area-dual">
+          <div className="ms-preview-stack">
+            {templateKind === "template1" && template1ViewModel ? (
+              <Template1Card
+                ref={previewRef}
+                viewModel={template1ViewModel}
+                unit={unit}
+                width={previewWidth}
+                height={previewHeight}
+                backgroundColor={activeBackgroundColor}
+                density={density}
+                chartHeights={template1Balanced.heights}
+              />
+            ) : null}
 
-          {templateKind === "template2" && template2Result.viewModel ? (
-            <Template2Card
-              ref={previewRef}
-              viewModel={template2Result.viewModel}
-              width={previewWidth}
-              height={previewHeight}
-              backgroundColor={activeBackgroundColor}
-              density={density}
-              chartHeights={template2Balanced.heights}
-            />
-          ) : null}
+            {templateKind === "template2" && template2ViewModel ? (
+              <Template2Card
+                ref={previewRef}
+                viewModel={template2ViewModel}
+                width={previewWidth}
+                height={previewHeight}
+                backgroundColor={activeBackgroundColor}
+                density={density}
+                chartHeights={template2Balanced.heights}
+              />
+            ) : null}
 
-          {templateKind === "template3" && template3Result.viewModel ? (
-            <Template3Card
-              ref={previewRef}
-              viewModel={template3Result.viewModel}
-              width={previewWidth}
-              height={previewHeight}
-              backgroundColor={activeBackgroundColor}
-              density={density}
-              chartHeights={template3Balanced.heights}
-            />
-          ) : null}
+            {templateKind === "template3" && template3ViewModel ? (
+              <Template3Card
+                ref={previewRef}
+                viewModel={template3ViewModel}
+                width={previewWidth}
+                height={previewHeight}
+                backgroundColor={activeBackgroundColor}
+                density={density}
+                chartHeights={template3Balanced.heights}
+              />
+            ) : null}
 
-          {templateKind === "template4" && template4Result.viewModel ? (
-            <Template4Card
-              ref={previewRef}
-              viewModel={template4Result.viewModel}
-              width={previewWidth}
-              height={previewHeight}
-              backgroundColor={activeBackgroundColor}
-              density={density}
-              chartHeights={template4Balanced.heights}
-            />
-          ) : null}
+            {templateKind === "template4" && template4ViewModel ? (
+              <Template4Card
+                ref={previewRef}
+                viewModel={template4ViewModel}
+                width={previewWidth}
+                height={previewHeight}
+                backgroundColor={activeBackgroundColor}
+                density={density}
+                chartHeights={template4Balanced.heights}
+              />
+            ) : null}
 
-          {!activeViewModel ? (
-            <div className="ms-preview-placeholder" style={{ width: previewWidth, height: previewHeight }}>
-              Fill required fields to render preview.
-            </div>
-          ) : null}
+            {!snapshotResult.viewModel ? (
+              <div className="ms-preview-placeholder" style={{ width: previewWidth, height: previewHeight }}>
+                Fill required fields and valid mapping to render snapshot preview.
+              </div>
+            ) : null}
+
+            <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
+          </div>
         </section>
       </main>
 
       <footer className="site-footer">
-        <p>
-          Designed by{" "}
-          <a href="https://www.fatmangosolutions.com/" target="_blank" rel="noopener noreferrer">
-            Yashraj Ghosalkar
-          </a>
-        </p>
-        <p className="site-footer-social">
-          Follow me on{" "}
-          <a href="https://www.linkedin.com/in/yashrajghosalkar/" target="_blank" rel="noopener noreferrer">
-            <LinkedInIcon /> LinkedIn
-          </a>
-        </p>
-        <p>
-          Designed for{" "}
-          <a href="https://www.maximizemarketresearch.com/" target="_blank" rel="noopener noreferrer">
-            MMR
-          </a>
-        </p>
+        <div className="site-footer-inner">
+          <span>
+            Designed by{" "}
+            <a href="https://www.fatmangosolutions.com/" target="_blank" rel="noopener noreferrer">
+              Yashraj Ghosalkar
+            </a>
+          </span>
+          <span className="site-footer-sep">•</span>
+          <span className="site-footer-social">
+            Follow on{" "}
+            <a href="https://www.linkedin.com/in/yashrajghosalkar/" target="_blank" rel="noopener noreferrer">
+              <LinkedInIcon /> LinkedIn
+            </a>
+          </span>
+          <span className="site-footer-sep">•</span>
+          <span>
+            Designed for{" "}
+            <a href="https://www.maximizemarketresearch.com/" target="_blank" rel="noopener noreferrer">
+              MMR
+            </a>
+          </span>
+        </div>
       </footer>
     </div>
   );
 }
 
-function showTruncationNote(
-  templateKind: TemplateKind,
-  template1ViewModel: ReturnType<typeof buildTemplate1ViewModel>["viewModel"],
-  template2ViewModel: ReturnType<typeof buildTemplate2ViewModel>["viewModel"],
-  template3ViewModel: ReturnType<typeof buildTemplate3ViewModel>["viewModel"],
-  template4ViewModel: ReturnType<typeof buildTemplate4ViewModel>["viewModel"]
-): boolean {
-  if (templateKind === "template1") {
-    return Boolean(template1ViewModel?.meta.truncatedTypes || template1ViewModel?.meta.truncatedRegions);
+type SnapshotBuildContext = {
+  formInput: SnapshotFormInput | null;
+  errors: string[];
+  truncated: boolean;
+};
+
+function buildSnapshotContext(input: UnifiedMarketInput): SnapshotBuildContext {
+  const mapping = input.mapping;
+
+  if (input.templateKind === "template1") {
+    const typeSeries = resolveChartSeries(input.segmentRows, mapping.template1.typeSegmentId);
+    const regionSeries = resolveChartSeries(input.segmentRows, mapping.template1.regionSegmentId);
+
+    if (!typeSeries.sourceFound || !regionSeries.sourceFound) {
+      return {
+        formInput: null,
+        errors: ["Select valid segment mappings for Template 1."],
+        truncated: false,
+      };
+    }
+
+    return {
+      formInput: createSnapshotInput(
+        input,
+        typeSeries.sourceTitle,
+        regionSeries.sourceTitle,
+        "",
+        typeSeries.labels,
+        regionSeries.labels,
+        []
+      ),
+      errors: [],
+      truncated: typeSeries.truncated || regionSeries.truncated,
+    };
   }
 
-  if (templateKind === "template2") {
-    return Boolean(
-      template2ViewModel?.meta.truncatedPrimary ||
-        template2ViewModel?.meta.truncatedSecondary ||
-        template2ViewModel?.meta.truncatedTertiary
-    );
+  if (input.templateKind === "template2") {
+    const topSeries = resolveChartSeries(input.segmentRows, mapping.template2.topStackSegmentId);
+    const pieSeries = resolveChartSeries(input.segmentRows, mapping.template2.pieSegmentId);
+    const hbarSeries = resolveChartSeries(input.segmentRows, mapping.template2.horizontalSegmentId);
+
+    if (!topSeries.sourceFound || !pieSeries.sourceFound || !hbarSeries.sourceFound) {
+      return {
+        formInput: null,
+        errors: ["Select valid segment mappings for Template 2."],
+        truncated: false,
+      };
+    }
+
+    return {
+      formInput: createSnapshotInput(
+        input,
+        hbarSeries.sourceTitle,
+        topSeries.sourceTitle,
+        pieSeries.sourceTitle,
+        hbarSeries.labels,
+        topSeries.labels,
+        pieSeries.labels
+      ),
+      errors: [],
+      truncated: topSeries.truncated || pieSeries.truncated || hbarSeries.truncated,
+    };
   }
 
-  if (templateKind === "template3") {
-    return Boolean(
-      template3ViewModel?.meta.truncatedPrimary ||
-        template3ViewModel?.meta.truncatedSecondary ||
-        template3ViewModel?.meta.truncatedTertiary
-    );
+  if (input.templateKind === "template3") {
+    const topSeries = resolveChartSeries(input.segmentRows, mapping.template3.topStackSegmentId);
+    const pieSeries = resolveChartSeries(input.segmentRows, mapping.template3.pieSegmentId);
+    const vSeries = resolveChartSeries(input.segmentRows, mapping.template3.verticalSegmentId);
+
+    if (!topSeries.sourceFound || !pieSeries.sourceFound || !vSeries.sourceFound) {
+      return {
+        formInput: null,
+        errors: ["Select valid segment mappings for Template 3."],
+        truncated: false,
+      };
+    }
+
+    return {
+      formInput: createSnapshotInput(
+        input,
+        vSeries.sourceTitle,
+        topSeries.sourceTitle,
+        pieSeries.sourceTitle,
+        vSeries.labels,
+        topSeries.labels,
+        pieSeries.labels
+      ),
+      errors: [],
+      truncated: topSeries.truncated || pieSeries.truncated || vSeries.truncated,
+    };
   }
 
-  return Boolean(template4ViewModel?.meta.truncatedPrimary || template4ViewModel?.meta.truncatedSecondary);
+  const topSeries = resolveChartSeries(input.segmentRows, mapping.template4.topStackSegmentId);
+  const verticalSeries = resolveChartSeries(input.segmentRows, mapping.template4.verticalSegmentId);
+
+  if (!topSeries.sourceFound || !verticalSeries.sourceFound) {
+    return {
+      formInput: null,
+      errors: ["Select valid segment mappings for Template 4."],
+      truncated: false,
+    };
+  }
+
+  return {
+    formInput: createSnapshotInput(
+      input,
+      verticalSeries.sourceTitle,
+      topSeries.sourceTitle,
+      "",
+      verticalSeries.labels,
+      topSeries.labels,
+      []
+    ),
+    errors: [],
+    truncated: topSeries.truncated || verticalSeries.truncated,
+  };
+}
+
+function createSnapshotInput(
+  input: UnifiedMarketInput,
+  primaryTitle: string,
+  secondaryTitle: string,
+  tertiaryTitle: string,
+  primaryLabels: string[],
+  secondaryLabels: string[],
+  tertiaryLabels: string[]
+): SnapshotFormInput {
+  return {
+    marketTitle: input.marketTitle,
+    cagrPercent: input.knownYearInput.cagrPercent,
+    dominantRegion: input.dominantRegion,
+    marketSize2025: input.derived.marketSize2025,
+    marketSize2032: input.derived.marketSize2032,
+    unit: input.unit,
+    forecastPeriod: input.reportCoverage.forecastPeriod,
+    primarySegmentTitle: primaryTitle,
+    secondarySegmentTitle: secondaryTitle,
+    tertiarySegmentTitle: tertiaryTitle,
+    typeSegmentsRaw: primaryLabels.join("\n"),
+    regionSegmentsRaw: secondaryLabels.join("\n"),
+    tertiarySegmentsRaw: tertiaryLabels.join("\n"),
+  };
+}
+
+function validateMapping(
+  templateKind: ChartTemplateKind,
+  mapping: SnapshotChartMapping,
+  rows: SegmentRowInput[]
+): string | undefined {
+  const requiredIds =
+    templateKind === "template1"
+      ? [mapping.template1.typeSegmentId, mapping.template1.regionSegmentId]
+      : templateKind === "template2"
+      ? [mapping.template2.topStackSegmentId, mapping.template2.pieSegmentId, mapping.template2.horizontalSegmentId]
+      : templateKind === "template3"
+      ? [mapping.template3.topStackSegmentId, mapping.template3.pieSegmentId, mapping.template3.verticalSegmentId]
+      : [mapping.template4.topStackSegmentId, mapping.template4.verticalSegmentId];
+
+  const minimumRows = templateKind === "template2" || templateKind === "template3" ? 3 : 2;
+  if (rows.length < minimumRows) {
+    return `Add at least ${minimumRows} segment rows for ${templateKind}.`;
+  }
+
+  if (requiredIds.some((id) => !id)) {
+    return "All chart mapping slots must be selected.";
+  }
+
+  const uniqueCount = new Set(requiredIds).size;
+  if (uniqueCount !== requiredIds.length) {
+    return "Chart mapping slots must point to different segment rows.";
+  }
+
+  const missing = requiredIds.find((id) => !rows.some((row) => row.id === id));
+  if (missing) {
+    return "Mapped segment row was removed. Please re-select mapping.";
+  }
+
+  const emptyData = requiredIds.find((id) => {
+    const row = rows.find((item) => item.id === id);
+    return !row || !row.linesRaw.trim() || !row.title.trim();
+  });
+
+  if (emptyData) {
+    return "Mapped segment rows require title and at least one hierarchy line.";
+  }
+
+  return undefined;
+}
+
+function validateUnifiedInput(input: UnifiedMarketInput): string[] {
+  const errors: string[] = [];
+
+  if (!input.marketTitle.trim()) errors.push("Market title is required.");
+  if (!input.dominantRegion.trim()) errors.push("Dominating region/country is required.");
+  if (!input.unit.trim()) errors.push("Unit of market size is required.");
+  if (!input.reportCoverage.forecastPeriod.trim()) errors.push("Forecast period is required.");
+  if (!input.reportCoverage.historicalDataText.trim()) errors.push("Historical data text is required.");
+
+  if (!Number.isFinite(input.knownYearInput.knownYear) || !Number.isInteger(input.knownYearInput.knownYear)) {
+    errors.push("Known market year must be a valid integer year.");
+  } else if (input.knownYearInput.knownYear < 1900 || input.knownYearInput.knownYear > 2100) {
+    errors.push("Known market year must be between 1900 and 2100.");
+  }
+
+  if (!Number.isFinite(input.knownYearInput.knownMarketSize) || input.knownYearInput.knownMarketSize <= 0) {
+    errors.push("Known market size must be a positive number.");
+  }
+
+  if (!Number.isFinite(input.knownYearInput.cagrPercent) || input.knownYearInput.cagrPercent < 0) {
+    errors.push("CAGR must be a non-negative number.");
+  }
+
+  if (!Number.isFinite(input.derived.marketSize2025) || input.derived.marketSize2025 <= 0) {
+    errors.push("Derived market size for 2025 must be a positive number.");
+  }
+
+  if (!Number.isFinite(input.derived.marketSize2032) || input.derived.marketSize2032 <= 0) {
+    errors.push("Derived market size for 2032 must be a positive number.");
+  }
+
+  if (input.derived.marketSize2032 <= input.derived.marketSize2025) {
+    errors.push("Market size in 2032 must be greater than market size in 2025.");
+  }
+
+  if (!Number.isFinite(input.reportCoverage.baseYear) || !Number.isInteger(input.reportCoverage.baseYear)) {
+    errors.push("Base year must be a valid integer.");
+  }
+
+  if (input.segmentRows.length > 50) {
+    errors.push("Segment catalog is very large (>50 rows); consider reducing rows for better performance.");
+  }
+
+  return errors;
 }
 
 function autoBalanceTemplate1(previewHeight: number, requested: Template1ChartHeights) {
@@ -770,6 +1289,15 @@ function scaleRelative(value: number, sourceMax: number, targetMax: number): num
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function buildSnapshotFileName(marketTitle: string): string {
+  const cleaned = marketTitle
+    .trim()
+    .replace(/[<>:"/\\|?*]+/g, "")
+    .replace(/\s+/g, " ");
+  const fileBase = cleaned.length > 0 ? cleaned : "Market Snapshot";
+  return `${fileBase}.webp`;
 }
 
 function densityStyle(density: DensityMode): CSSProperties {

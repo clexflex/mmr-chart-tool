@@ -1,3 +1,76 @@
+export type ChartTemplateKind = "template1" | "template2" | "template3" | "template4";
+
+export type TableStyleMode = "legacy" | "modern";
+
+export type DensityMode = "compact" | "spacious";
+
+export type KnownYearInput = {
+  knownYear: number;
+  knownMarketSize: number;
+  cagrPercent: number;
+};
+
+export type DerivedMarketSizes = {
+  marketSize2025: number;
+  marketSize2032: number;
+  is2025Overridden: boolean;
+  is2032Overridden: boolean;
+};
+
+export type SegmentRowInput = {
+  id: string;
+  title: string;
+  includeInTable: boolean;
+  linesRaw: string;
+};
+
+export type ParsedSegmentNode = {
+  label: string;
+  depth: number;
+};
+
+export type SnapshotChartMapping = {
+  template1: { typeSegmentId: string; regionSegmentId: string };
+  template2: { topStackSegmentId: string; pieSegmentId: string; horizontalSegmentId: string };
+  template3: { topStackSegmentId: string; pieSegmentId: string; verticalSegmentId: string };
+  template4: { topStackSegmentId: string; verticalSegmentId: string };
+};
+
+export type ReportCoverageInput = {
+  baseYear: number;
+  historicalDataText: string;
+  forecastPeriod: string;
+};
+
+export type UnifiedMarketInput = {
+  marketTitle: string;
+  dominantRegion: string;
+  unit: string;
+  knownYearInput: KnownYearInput;
+  derived: DerivedMarketSizes;
+  reportCoverage: ReportCoverageInput;
+  segmentRows: SegmentRowInput[];
+  mapping: SnapshotChartMapping;
+  includeRegionInTable: boolean;
+  tableStyleMode: TableStyleMode;
+  previewWidth: number;
+  previewHeight: number;
+  density: DensityMode;
+  templateKind: ChartTemplateKind;
+};
+
+export type SegmentationTableViewModel = {
+  marketTitle: string;
+  baseYear: number;
+  forecastPeriod: string;
+  historicalDataText: string;
+  marketSizeBase: string;
+  marketSizeTarget: string;
+  cagrText: string;
+  segmentRows: { title: string; nodes: ParsedSegmentNode[] }[];
+  styleMode: TableStyleMode;
+};
+
 export type SnapshotFormInput = {
   marketTitle: string;
   cagrPercent: number;
@@ -120,6 +193,5 @@ export type ExportOptions = {
   pixelRatio: number;
   quality: number;
   format: "image/webp";
+  maxFileSizeKb?: number;
 };
-
-export type DensityMode = "compact" | "spacious";

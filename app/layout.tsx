@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MMR Template 1 Snapshot Builder",
+  title: "MMR Tools",
   description: "Generate MMR market snapshot template images and download as WebP.",
 };
 

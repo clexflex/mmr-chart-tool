@@ -4,8 +4,9 @@ import type { ExportOptions } from "@/lib/template1/types";
 const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   fileName: "market-snapshot-template1.webp",
   pixelRatio: 1,
-  quality: 0.95,
+  quality: 0.78,
   format: "image/webp",
+  maxFileSizeKb: 30,
 };
 
 export async function downloadElementAsWebp(
@@ -23,7 +24,30 @@ export async function downloadElementAsWebp(
     cacheBust: true,
   });
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
+  let blob = await canvasToBlob(canvas, config.format, config.quality);
+  const maxBytes = (config.maxFileSizeKb ?? 30) * 1024;
+
+  if (blob.size > maxBytes) {
+    const qualitySteps = [0.72, 0.68, 0.64, 0.6, 0.56, 0.52, 0.48, 0.44, 0.4];
+    for (const quality of qualitySteps) {
+      const candidate = await canvasToBlob(canvas, config.format, quality);
+      blob = candidate;
+      if (candidate.size <= maxBytes) {
+        break;
+      }
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = config.fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, format: string, quality: number): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (result) => {
         if (!result) {
@@ -32,15 +56,8 @@ export async function downloadElementAsWebp(
         }
         resolve(result);
       },
-      config.format,
-      config.quality
+      format,
+      quality
     );
   });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = config.fileName;
-  link.click();
-  URL.revokeObjectURL(url);
 }
