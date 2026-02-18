@@ -68,6 +68,53 @@ export type Template3ViewModel = {
   };
 };
 
+export type Template2ViewModel = {
+  text: {
+    headerDominance: string;
+    headerCagrLead: string;
+    headerCagrBody: string;
+    mainTitle: string;
+    topSegmentTitle: string;
+    pieTitle: string;
+    horizontalTitle: string;
+  };
+  topStackSeries: SegmentPoint[];
+  pieSeries: SegmentPoint[];
+  horizontalSeries: SegmentPoint[];
+  marketSize: {
+    value2025: number;
+    value2032: number;
+    unit: string;
+  };
+  meta: {
+    truncatedPrimary: boolean;
+    truncatedSecondary: boolean;
+    truncatedTertiary: boolean;
+  };
+};
+
+export type Template4ViewModel = {
+  text: {
+    headerDominance: string;
+    headerCagrLead: string;
+    headerCagrBody: string;
+    mainTitle: string;
+    topSegmentTitle: string;
+    verticalTitle: string;
+  };
+  topStackSeries: SegmentPoint[];
+  verticalSeries: SegmentPoint[];
+  marketSize: {
+    value2025: number;
+    value2032: number;
+    unit: string;
+  };
+  meta: {
+    truncatedPrimary: boolean;
+    truncatedSecondary: boolean;
+  };
+};
+
 export type ExportOptions = {
   fileName: string;
   pixelRatio: number;

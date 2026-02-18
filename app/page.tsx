@@ -2,12 +2,16 @@
 
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { Template1Card } from "@/components/template1/Template1Card";
+import { Template2Card } from "@/components/template2/Template2Card";
 import { Template3Card } from "@/components/template3/Template3Card";
+import { Template4Card } from "@/components/template4/Template4Card";
 import { downloadElementAsWebp } from "@/lib/export/downloadWebp";
 import { buildTemplate1ViewModel } from "@/lib/template1/generateData";
 import { segmentLimit } from "@/lib/template1/parseInputs";
 import type { DensityMode, SnapshotFormInput } from "@/lib/template1/types";
+import { buildTemplate2ViewModel } from "@/lib/template2/generateData";
 import { buildTemplate3ViewModel } from "@/lib/template3/generateData";
+import { buildTemplate4ViewModel } from "@/lib/template4/generateData";
 
 const DEFAULT_FORM: SnapshotFormInput = {
   marketTitle: "Global Market",
@@ -25,7 +29,7 @@ const DEFAULT_FORM: SnapshotFormInput = {
   tertiarySegmentsRaw: "Application1\nApplication2\nApplication3\nApplication4\nApplication5",
 };
 
-type TemplateKind = "template1" | "template3";
+type TemplateKind = "template1" | "template2" | "template3" | "template4";
 
 type Template1ChartHeights = {
   yearlyPlot: number;
@@ -33,10 +37,15 @@ type Template1ChartHeights = {
   regionChart: number;
 };
 
-type Template3ChartHeights = {
+type SplitChartHeights = {
   topSegment: number;
   bottomLeft: number;
   bottomRight: number;
+};
+
+type Template4ChartHeights = {
+  topSegment: number;
+  bottomMain: number;
 };
 
 const DEFAULT_TEMPLATE1_CHART_HEIGHTS: Template1ChartHeights = {
@@ -45,10 +54,15 @@ const DEFAULT_TEMPLATE1_CHART_HEIGHTS: Template1ChartHeights = {
   regionChart: 170,
 };
 
-const DEFAULT_TEMPLATE3_CHART_HEIGHTS: Template3ChartHeights = {
+const DEFAULT_SPLIT_CHART_HEIGHTS: SplitChartHeights = {
   topSegment: 120,
   bottomLeft: 170,
   bottomRight: 170,
+};
+
+const DEFAULT_TEMPLATE4_CHART_HEIGHTS: Template4ChartHeights = {
+  topSegment: 120,
+  bottomMain: 240,
 };
 
 const MIN_PREVIEW_WIDTH = 600;
@@ -57,7 +71,9 @@ const MAX_PREVIEW_SIZE = 900;
 const MIN_CHART_HEIGHT = 110;
 const MAX_CHART_HEIGHT = 320;
 const TEMPLATE1_OVERHEAD = 168;
+const TEMPLATE2_OVERHEAD = 198;
 const TEMPLATE3_OVERHEAD = 198;
+const TEMPLATE4_OVERHEAD = 186;
 
 export default function Home() {
   const [templateKind, setTemplateKind] = useState<TemplateKind>("template1");
@@ -67,31 +83,60 @@ export default function Home() {
   const [previewHeight, setPreviewHeight] = useState(580);
   const [template1ChartHeights, setTemplate1ChartHeights] =
     useState<Template1ChartHeights>(DEFAULT_TEMPLATE1_CHART_HEIGHTS);
+  const [template2ChartHeights, setTemplate2ChartHeights] =
+    useState<SplitChartHeights>(DEFAULT_SPLIT_CHART_HEIGHTS);
   const [template3ChartHeights, setTemplate3ChartHeights] =
-    useState<Template3ChartHeights>(DEFAULT_TEMPLATE3_CHART_HEIGHTS);
+    useState<SplitChartHeights>(DEFAULT_SPLIT_CHART_HEIGHTS);
+  const [template4ChartHeights, setTemplate4ChartHeights] =
+    useState<Template4ChartHeights>(DEFAULT_TEMPLATE4_CHART_HEIGHTS);
   const [useSolidBackground, setUseSolidBackground] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState("#e7e7e7");
   const [isExporting, setIsExporting] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const template1Result = useMemo(() => buildTemplate1ViewModel(form), [form]);
+  const template2Result = useMemo(() => buildTemplate2ViewModel(form), [form]);
   const template3Result = useMemo(() => buildTemplate3ViewModel(form), [form]);
+  const template4Result = useMemo(() => buildTemplate4ViewModel(form), [form]);
 
   const template1Balanced = useMemo(
     () => autoBalanceTemplate1(previewHeight, template1ChartHeights),
     [previewHeight, template1ChartHeights]
   );
+  const template2Balanced = useMemo(
+    () => autoBalanceSplitTemplate(previewHeight, template2ChartHeights, TEMPLATE2_OVERHEAD),
+    [previewHeight, template2ChartHeights]
+  );
   const template3Balanced = useMemo(
-    () => autoBalanceTemplate3(previewHeight, template3ChartHeights),
+    () => autoBalanceSplitTemplate(previewHeight, template3ChartHeights, TEMPLATE3_OVERHEAD),
     [previewHeight, template3ChartHeights]
+  );
+  const template4Balanced = useMemo(
+    () => autoBalanceTemplate4(previewHeight, template4ChartHeights),
+    [previewHeight, template4ChartHeights]
   );
 
   const activeBackgroundColor = useSolidBackground ? backgroundColor : "transparent";
-  const activeResult = templateKind === "template1" ? template1Result : template3Result;
+  const activeResult =
+    templateKind === "template1"
+      ? template1Result
+      : templateKind === "template2"
+      ? template2Result
+      : templateKind === "template3"
+      ? template3Result
+      : template4Result;
   const activeErrors = activeResult.errors;
   const activeViewModel = activeResult.viewModel;
   const activeWasAutoBalanced =
-    templateKind === "template1" ? template1Balanced.wasAutoBalanced : template3Balanced.wasAutoBalanced;
+    templateKind === "template1"
+      ? template1Balanced.wasAutoBalanced
+      : templateKind === "template2"
+      ? template2Balanced.wasAutoBalanced
+      : templateKind === "template3"
+      ? template3Balanced.wasAutoBalanced
+      : template4Balanced.wasAutoBalanced;
+
+  const showTertiary = templateKind === "template2" || templateKind === "template3";
 
   const updateText =
     (field: keyof SnapshotFormInput) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -124,11 +169,31 @@ export default function Home() {
       }));
     };
 
+  const handleTemplate2ChartHeight =
+    (field: keyof SplitChartHeights) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = Number(event.target.value);
+      if (!Number.isFinite(raw)) return;
+      setTemplate2ChartHeights((current) => ({
+        ...current,
+        [field]: clamp(Math.round(raw), MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
+      }));
+    };
+
   const handleTemplate3ChartHeight =
-    (field: keyof Template3ChartHeights) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    (field: keyof SplitChartHeights) => (event: React.ChangeEvent<HTMLInputElement>) => {
       const raw = Number(event.target.value);
       if (!Number.isFinite(raw)) return;
       setTemplate3ChartHeights((current) => ({
+        ...current,
+        [field]: clamp(Math.round(raw), MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
+      }));
+    };
+
+  const handleTemplate4ChartHeight =
+    (field: keyof Template4ChartHeights) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = Number(event.target.value);
+      if (!Number.isFinite(raw)) return;
+      setTemplate4ChartHeights((current) => ({
         ...current,
         [field]: clamp(Math.round(raw), MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
       }));
@@ -168,7 +233,9 @@ export default function Home() {
                   onChange={(event) => setTemplateKind(event.target.value as TemplateKind)}
                 >
                   <option value="template1">Template 1</option>
+                  <option value="template2">Template 2</option>
                   <option value="template3">Template 3</option>
+                  <option value="template4">Template 4</option>
                 </select>
               </label>
               <label className="ms-field">
@@ -259,7 +326,44 @@ export default function Home() {
                     />
                   </label>
                 </div>
-              ) : (
+              ) : null}
+
+              {templateKind === "template2" ? (
+                <div className="ms-preview-settings-row ms-preview-settings-row-3">
+                  <label className="ms-field">
+                    <span>Top Segment Height</span>
+                    <input
+                      type="number"
+                      min={MIN_CHART_HEIGHT}
+                      max={MAX_CHART_HEIGHT}
+                      value={template2ChartHeights.topSegment}
+                      onChange={handleTemplate2ChartHeight("topSegment")}
+                    />
+                  </label>
+                  <label className="ms-field">
+                    <span>Bottom Left Chart Height</span>
+                    <input
+                      type="number"
+                      min={MIN_CHART_HEIGHT}
+                      max={MAX_CHART_HEIGHT}
+                      value={template2ChartHeights.bottomLeft}
+                      onChange={handleTemplate2ChartHeight("bottomLeft")}
+                    />
+                  </label>
+                  <label className="ms-field">
+                    <span>Bottom Right Chart Height</span>
+                    <input
+                      type="number"
+                      min={MIN_CHART_HEIGHT}
+                      max={MAX_CHART_HEIGHT}
+                      value={template2ChartHeights.bottomRight}
+                      onChange={handleTemplate2ChartHeight("bottomRight")}
+                    />
+                  </label>
+                </div>
+              ) : null}
+
+              {templateKind === "template3" ? (
                 <div className="ms-preview-settings-row ms-preview-settings-row-3">
                   <label className="ms-field">
                     <span>Top Segment Height</span>
@@ -292,7 +396,32 @@ export default function Home() {
                     />
                   </label>
                 </div>
-              )}
+              ) : null}
+
+              {templateKind === "template4" ? (
+                <div className="ms-preview-settings-row">
+                  <label className="ms-field">
+                    <span>Top Segment Height</span>
+                    <input
+                      type="number"
+                      min={MIN_CHART_HEIGHT}
+                      max={MAX_CHART_HEIGHT}
+                      value={template4ChartHeights.topSegment}
+                      onChange={handleTemplate4ChartHeight("topSegment")}
+                    />
+                  </label>
+                  <label className="ms-field">
+                    <span>Bottom Main Chart Height</span>
+                    <input
+                      type="number"
+                      min={MIN_CHART_HEIGHT}
+                      max={MAX_CHART_HEIGHT}
+                      value={template4ChartHeights.bottomMain}
+                      onChange={handleTemplate4ChartHeight("bottomMain")}
+                    />
+                  </label>
+                </div>
+              ) : null}
             </details>
           </div>
 
@@ -352,7 +481,7 @@ export default function Home() {
               <input value={form.secondarySegmentTitle} onChange={updateText("secondarySegmentTitle")} />
             </label>
 
-            {templateKind === "template3" ? (
+            {showTertiary ? (
               <label className="ms-field ms-field-full">
                 <span>Tertiary Segment Title</span>
                 <input value={form.tertiarySegmentTitle} onChange={updateText("tertiarySegmentTitle")} />
@@ -378,7 +507,7 @@ export default function Home() {
               <textarea rows={4} value={form.regionSegmentsRaw} onChange={updateText("regionSegmentsRaw")} />
             </label>
 
-            {templateKind === "template3" ? (
+            {showTertiary ? (
               <label className="ms-field ms-field-full">
                 <span>
                   {form.tertiarySegmentTitle || "Tertiary"} Segments (comma/newline separated, top {segmentLimit()} rendered)
@@ -400,7 +529,7 @@ export default function Home() {
             <p className="ms-note">Chart heights were auto-balanced to fit the current preview height.</p>
           ) : null}
 
-          {showTruncationNote(templateKind, template1Result.viewModel, template3Result.viewModel) ? (
+          {showTruncationNote(templateKind, template1Result.viewModel, template2Result.viewModel, template3Result.viewModel, template4Result.viewModel) ? (
             <p className="ms-note">Rendering top {segmentLimit()} items for chart/legend stability.</p>
           ) : null}
 
@@ -428,6 +557,18 @@ export default function Home() {
             />
           ) : null}
 
+          {templateKind === "template2" && template2Result.viewModel ? (
+            <Template2Card
+              ref={previewRef}
+              viewModel={template2Result.viewModel}
+              width={previewWidth}
+              height={previewHeight}
+              backgroundColor={activeBackgroundColor}
+              density={density}
+              chartHeights={template2Balanced.heights}
+            />
+          ) : null}
+
           {templateKind === "template3" && template3Result.viewModel ? (
             <Template3Card
               ref={previewRef}
@@ -437,6 +578,18 @@ export default function Home() {
               backgroundColor={activeBackgroundColor}
               density={density}
               chartHeights={template3Balanced.heights}
+            />
+          ) : null}
+
+          {templateKind === "template4" && template4Result.viewModel ? (
+            <Template4Card
+              ref={previewRef}
+              viewModel={template4Result.viewModel}
+              width={previewWidth}
+              height={previewHeight}
+              backgroundColor={activeBackgroundColor}
+              density={density}
+              chartHeights={template4Balanced.heights}
             />
           ) : null}
 
@@ -475,17 +628,31 @@ export default function Home() {
 function showTruncationNote(
   templateKind: TemplateKind,
   template1ViewModel: ReturnType<typeof buildTemplate1ViewModel>["viewModel"],
-  template3ViewModel: ReturnType<typeof buildTemplate3ViewModel>["viewModel"]
+  template2ViewModel: ReturnType<typeof buildTemplate2ViewModel>["viewModel"],
+  template3ViewModel: ReturnType<typeof buildTemplate3ViewModel>["viewModel"],
+  template4ViewModel: ReturnType<typeof buildTemplate4ViewModel>["viewModel"]
 ): boolean {
   if (templateKind === "template1") {
     return Boolean(template1ViewModel?.meta.truncatedTypes || template1ViewModel?.meta.truncatedRegions);
   }
 
-  return Boolean(
-    template3ViewModel?.meta.truncatedPrimary ||
-      template3ViewModel?.meta.truncatedSecondary ||
-      template3ViewModel?.meta.truncatedTertiary
-  );
+  if (templateKind === "template2") {
+    return Boolean(
+      template2ViewModel?.meta.truncatedPrimary ||
+        template2ViewModel?.meta.truncatedSecondary ||
+        template2ViewModel?.meta.truncatedTertiary
+    );
+  }
+
+  if (templateKind === "template3") {
+    return Boolean(
+      template3ViewModel?.meta.truncatedPrimary ||
+        template3ViewModel?.meta.truncatedSecondary ||
+        template3ViewModel?.meta.truncatedTertiary
+    );
+  }
+
+  return Boolean(template4ViewModel?.meta.truncatedPrimary || template4ViewModel?.meta.truncatedSecondary);
 }
 
 function autoBalanceTemplate1(previewHeight: number, requested: Template1ChartHeights) {
@@ -514,19 +681,19 @@ function autoBalanceTemplate1(previewHeight: number, requested: Template1ChartHe
   return { heights, wasAutoBalanced };
 }
 
-function autoBalanceTemplate3(previewHeight: number, requested: Template3ChartHeights) {
-  const normalized: Template3ChartHeights = {
+function autoBalanceSplitTemplate(previewHeight: number, requested: SplitChartHeights, overhead: number) {
+  const normalized: SplitChartHeights = {
     topSegment: clamp(requested.topSegment, MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
     bottomLeft: clamp(requested.bottomLeft, MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
     bottomRight: clamp(requested.bottomRight, MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
   };
 
-  const availablePlotSpace = Math.max(MIN_CHART_HEIGHT * 2, previewHeight - TEMPLATE3_OVERHEAD);
+  const availablePlotSpace = Math.max(MIN_CHART_HEIGHT * 2, previewHeight - overhead);
   const requestedBottom = Math.max(normalized.bottomLeft, normalized.bottomRight);
 
   const { top, bottom } = balanceTwoRows(normalized.topSegment, requestedBottom, availablePlotSpace);
 
-  const heights: Template3ChartHeights = {
+  const heights: SplitChartHeights = {
     topSegment: top,
     bottomLeft: Math.min(scaleRelative(normalized.bottomLeft, requestedBottom, bottom), bottom),
     bottomRight: Math.min(scaleRelative(normalized.bottomRight, requestedBottom, bottom), bottom),
@@ -536,6 +703,26 @@ function autoBalanceTemplate3(previewHeight: number, requested: Template3ChartHe
     heights.topSegment !== normalized.topSegment ||
     heights.bottomLeft !== normalized.bottomLeft ||
     heights.bottomRight !== normalized.bottomRight;
+
+  return { heights, wasAutoBalanced };
+}
+
+function autoBalanceTemplate4(previewHeight: number, requested: Template4ChartHeights) {
+  const normalized: Template4ChartHeights = {
+    topSegment: clamp(requested.topSegment, MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
+    bottomMain: clamp(requested.bottomMain, MIN_CHART_HEIGHT, MAX_CHART_HEIGHT),
+  };
+
+  const availablePlotSpace = Math.max(MIN_CHART_HEIGHT * 2, previewHeight - TEMPLATE4_OVERHEAD);
+  const { top, bottom } = balanceTwoRows(normalized.topSegment, normalized.bottomMain, availablePlotSpace);
+
+  const heights: Template4ChartHeights = {
+    topSegment: top,
+    bottomMain: bottom,
+  };
+
+  const wasAutoBalanced =
+    heights.topSegment !== normalized.topSegment || heights.bottomMain !== normalized.bottomMain;
 
   return { heights, wasAutoBalanced };
 }

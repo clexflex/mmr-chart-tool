@@ -1,5 +1,5 @@
 import { parseSegmentLabels } from "@/lib/template1/parseInputs";
-import type { SnapshotFormInput, Template3ViewModel } from "@/lib/template1/types";
+import type { SnapshotFormInput, Template2ViewModel } from "@/lib/template1/types";
 import {
   createShareSeries,
   createValueSeries,
@@ -7,12 +7,12 @@ import {
   unitLabelForType,
 } from "@/lib/templateShared/series";
 
-export type BuildTemplate3ViewModelResult = {
-  viewModel: Template3ViewModel | null;
+export type BuildTemplate2ViewModelResult = {
+  viewModel: Template2ViewModel | null;
   errors: string[];
 };
 
-export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate3ViewModelResult {
+export function buildTemplate2ViewModel(input: SnapshotFormInput): BuildTemplate2ViewModelResult {
   const errors: string[] = [];
 
   const marketTitle = input.marketTitle.trim();
@@ -78,11 +78,11 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
         mainTitle: marketTitle,
         topSegmentTitle: `${marketTitle} Share, by ${secondarySegmentTitle} in 2025 (%)`,
         pieTitle: `${marketTitle}, by ${tertiarySegmentTitle} in 2025 (%)`,
-        verticalTitle: `${marketTitle}, by ${primarySegmentTitle} in 2025 (${unitLabelForType(unit)})`,
+        horizontalTitle: `${marketTitle}, by ${primarySegmentTitle} in 2025 (${unitLabelForType(unit)})`,
       },
       topStackSeries: createShareSeries(parsedSecondary.items),
       pieSeries: createShareSeries(parsedTertiary.items),
-      verticalSeries: createValueSeries(parsedPrimary.items, input.marketSize2025),
+      horizontalSeries: createValueSeries(parsedPrimary.items, input.marketSize2025),
       marketSize: {
         value2025: Number(input.marketSize2025.toFixed(2)),
         value2032: Number(input.marketSize2032.toFixed(2)),

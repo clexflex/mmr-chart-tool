@@ -1,5 +1,5 @@
 import { parseSegmentLabels } from "@/lib/template1/parseInputs";
-import type { SnapshotFormInput, Template3ViewModel } from "@/lib/template1/types";
+import type { SnapshotFormInput, Template4ViewModel } from "@/lib/template1/types";
 import {
   createShareSeries,
   createValueSeries,
@@ -7,12 +7,12 @@ import {
   unitLabelForType,
 } from "@/lib/templateShared/series";
 
-export type BuildTemplate3ViewModelResult = {
-  viewModel: Template3ViewModel | null;
+export type BuildTemplate4ViewModelResult = {
+  viewModel: Template4ViewModel | null;
   errors: string[];
 };
 
-export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate3ViewModelResult {
+export function buildTemplate4ViewModel(input: SnapshotFormInput): BuildTemplate4ViewModelResult {
   const errors: string[] = [];
 
   const marketTitle = input.marketTitle.trim();
@@ -21,7 +21,6 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
   const forecastPeriod = input.forecastPeriod.trim();
   const primarySegmentTitle = input.primarySegmentTitle.trim();
   const secondarySegmentTitle = input.secondarySegmentTitle.trim();
-  const tertiarySegmentTitle = input.tertiarySegmentTitle.trim();
 
   if (!marketTitle) errors.push("Market title is required.");
   if (!dominantRegion) errors.push("Dominating region/country is required.");
@@ -29,7 +28,6 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
   if (!forecastPeriod) errors.push("Forecast period is required.");
   if (!primarySegmentTitle) errors.push("Primary segment title is required.");
   if (!secondarySegmentTitle) errors.push("Secondary segment title is required.");
-  if (!tertiarySegmentTitle) errors.push("Tertiary segment title is required.");
 
   if (!Number.isFinite(input.cagrPercent) || input.cagrPercent < 0) {
     errors.push("CAGR must be a non-negative number.");
@@ -49,7 +47,6 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
 
   const parsedPrimary = parseSegmentLabels(input.typeSegmentsRaw);
   const parsedSecondary = parseSegmentLabels(input.regionSegmentsRaw);
-  const parsedTertiary = parseSegmentLabels(input.tertiarySegmentsRaw);
 
   if (parsedPrimary.items.length === 0) {
     errors.push("Add at least one primary segment.");
@@ -57,10 +54,6 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
 
   if (parsedSecondary.items.length === 0) {
     errors.push("Add at least one secondary segment.");
-  }
-
-  if (parsedTertiary.items.length === 0) {
-    errors.push("Add at least one tertiary segment.");
   }
 
   if (errors.length > 0) {
@@ -77,11 +70,9 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
         headerCagrBody: `${marketTitle} to grow at a CAGR of ${cagrText}% during ${forecastPeriod}`,
         mainTitle: marketTitle,
         topSegmentTitle: `${marketTitle} Share, by ${secondarySegmentTitle} in 2025 (%)`,
-        pieTitle: `${marketTitle}, by ${tertiarySegmentTitle} in 2025 (%)`,
         verticalTitle: `${marketTitle}, by ${primarySegmentTitle} in 2025 (${unitLabelForType(unit)})`,
       },
       topStackSeries: createShareSeries(parsedSecondary.items),
-      pieSeries: createShareSeries(parsedTertiary.items),
       verticalSeries: createValueSeries(parsedPrimary.items, input.marketSize2025),
       marketSize: {
         value2025: Number(input.marketSize2025.toFixed(2)),
@@ -91,7 +82,6 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
       meta: {
         truncatedPrimary: parsedPrimary.truncated,
         truncatedSecondary: parsedSecondary.truncated,
-        truncatedTertiary: parsedTertiary.truncated,
       },
     },
     errors: [],
