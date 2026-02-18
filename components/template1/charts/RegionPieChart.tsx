@@ -1,4 +1,4 @@
-import type { SegmentPoint } from "@/lib/template1/types";
+import type { DensityMode, SegmentPoint } from "@/lib/template1/types";
 
 const PIE_COLORS = [
   "#5d96c9",
@@ -17,9 +17,10 @@ type RegionPieChartProps = {
   title: string;
   data: SegmentPoint[];
   chartHeight: number;
+  density: DensityMode;
 };
 
-export function RegionPieChart({ title, data, chartHeight }: RegionPieChartProps) {
+export function RegionPieChart({ title, data, chartHeight, density }: RegionPieChartProps) {
   const total = data.reduce((acc, item) => acc + item.value, 0);
   const pieSize = clamp(chartHeight, 120, 220);
   const slices = data
@@ -67,7 +68,21 @@ export function RegionPieChart({ title, data, chartHeight }: RegionPieChartProps
                 className="t1-pie-swatch"
                 style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
               />
-              <span className="t1-pie-legend-label" title={item.label}>
+              <span
+                className="t1-pie-legend-label"
+                title={item.label}
+                style={
+                  density === "compact"
+                    ? {
+                        fontSize: "12px",
+                        whiteSpace: "normal",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                      }
+                    : { fontSize: "13px" }
+                }
+              >
                 {item.label}
               </span>
             </li>

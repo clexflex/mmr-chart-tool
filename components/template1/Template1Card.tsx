@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import type { Template1ViewModel } from "@/lib/template1/types";
+import type { DensityMode, Template1ViewModel } from "@/lib/template1/types";
 import { HeaderRow } from "./HeaderRow";
 import { RegionPieChart } from "./charts/RegionPieChart";
 import { TypeHorizontalBarChart } from "./charts/TypeHorizontalBarChart";
@@ -11,6 +11,7 @@ type Template1CardProps = {
   width: number;
   height: number;
   backgroundColor: string;
+  density: DensityMode;
   chartHeights: {
     yearlyPlot: number;
     typeChart: number;
@@ -19,11 +20,11 @@ type Template1CardProps = {
 };
 
 export const Template1Card = forwardRef<HTMLDivElement, Template1CardProps>(function Template1Card(
-  { viewModel, unit, width, height, backgroundColor, chartHeights },
+  { viewModel, unit, width, height, backgroundColor, density, chartHeights },
   ref
 ) {
   return (
-    <div className="t1-card" ref={ref} style={{ width, height, backgroundColor }}>
+    <div className={`t1-card t1-card-${density}`} ref={ref} style={{ width, height, backgroundColor }}>
       <HeaderRow
         headerDominance={viewModel.text.headerDominance}
         headerCagrLead={viewModel.text.headerCagrLead}
@@ -44,11 +45,13 @@ export const Template1Card = forwardRef<HTMLDivElement, Template1CardProps>(func
           title={viewModel.text.typeTitle}
           data={viewModel.typeSeries}
           chartHeight={chartHeights.typeChart}
+          density={density}
         />
         <RegionPieChart
           title={viewModel.text.regionTitle}
           data={viewModel.regionSeries}
           chartHeight={chartHeights.regionChart}
+          density={density}
         />
       </div>
     </div>
