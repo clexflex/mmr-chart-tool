@@ -1294,6 +1294,68 @@ input[type="number"]::-webkit-inner-spin-button {
   width: 70%;
 }
 
+.toc-preview {
+  width: 100%;
+  border: 1px solid #c9d5e7;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.toc-preview-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.toc-preview-title {
+  margin: 0;
+  font-size: 14px;
+  color: #1d3e6c;
+}
+
+.toc-preview-meta {
+  margin: 0;
+  font-size: 12px;
+  color: #4b5f7f;
+}
+
+.toc-preview-note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #885a08;
+  background: #fff7db;
+  border: 1px solid #f4dd9d;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.toc-preview-body {
+  overflow: auto;
+  max-height: 680px;
+  border: 1px solid #d6e2f2;
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 10px;
+}
+
+.toc-document {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1c2e46;
+}
+
+.toc-line {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.toc-spacer {
+  height: 10px;
+}
+
 .density-compact .t1-hbar-label,
 .density-compact .t1-pie-legend-label,
 .density-compact .t3-legend-label,

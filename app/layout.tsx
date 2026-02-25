@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MMR Tools",
-  description: "Generate MMR market snapshot template images and download as WebP.",
+  description: "Generate MMR market snapshot template images, segmentation tables, and dynamic TOC HTML.",
 };
 
 export default function RootLayout({

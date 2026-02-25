@@ -5,6 +5,7 @@ import { SegmentationTablePreview } from "@/components/segmentation-table/Segmen
 import { TableStyleToggle } from "@/components/segmentation-table/TableStyleToggle";
 import { SegmentCatalogEditor } from "@/components/segments/SegmentCatalogEditor";
 import { SegmentMappingControls } from "@/components/segments/SegmentMappingControls";
+import { TocPreview } from "@/components/toc/TocPreview";
 import { Template1Card } from "@/components/template1/Template1Card";
 import { Template2Card } from "@/components/template2/Template2Card";
 import { Template3Card } from "@/components/template3/Template3Card";
@@ -14,6 +15,8 @@ import { deriveMarketSizes, resetDerivedOverrides } from "@/lib/market/deriveMar
 import { resolveChartSeries } from "@/lib/snapshot/resolveChartSeries";
 import { buildSegmentationTableViewModel } from "@/lib/table/buildSegmentationTableViewModel";
 import { renderSegmentationTableHtml } from "@/lib/table/renderSegmentationTableHtml";
+import { buildTocViewModel } from "@/lib/toc/buildTocViewModel";
+import { renderTocHtml } from "@/lib/toc/renderTocHtml";
 import { buildTemplate1ViewModel } from "@/lib/template1/generateData";
 import { buildTemplate2ViewModel } from "@/lib/template2/generateData";
 import { buildTemplate3ViewModel } from "@/lib/template3/generateData";
@@ -23,6 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   ChartTemplateKind,
   DensityMode,
@@ -100,6 +104,8 @@ const DEFAULT_SEGMENT_ROWS: SegmentRowInput[] = [
   },
 ];
 
+const DEFAULT_KEY_PLAYERS_RAW = "Company1\nCompany2\nCompany3";
+
 const DEFAULT_MAPPING: SnapshotChartMapping = {
   template1: {
     typeSegmentId: SEGMENT_PRIMARY_ID,
@@ -151,6 +157,7 @@ export default function Home() {
 
   const [segmentRows, setSegmentRows] = useState<SegmentRowInput[]>(DEFAULT_SEGMENT_ROWS);
   const [mapping, setMapping] = useState<SnapshotChartMapping>(DEFAULT_MAPPING);
+  const [keyPlayersRaw, setKeyPlayersRaw] = useState(DEFAULT_KEY_PLAYERS_RAW);
 
   const [tableStyleMode, setTableStyleMode] = useState<TableStyleMode>("legacy");
   const [includeRegionInTable, setIncludeRegionInTable] = useState(false);
@@ -172,6 +179,7 @@ export default function Home() {
   const [backgroundColor, setBackgroundColor] = useState("#e7e7e7");
   const [isExporting, setIsExporting] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [tocCopyStatus, setTocCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
 
   const previewRef = useRef<HTMLDivElement>(null);
@@ -265,6 +273,17 @@ export default function Home() {
 
   const tableViewModel = useMemo(() => buildSegmentationTableViewModel(unifiedInput), [unifiedInput]);
   const tableHtml = useMemo(() => renderSegmentationTableHtml(tableViewModel), [tableViewModel]);
+  const tocViewModel = useMemo(
+    () =>
+      buildTocViewModel({
+        marketTitle,
+        keyPlayersRaw,
+        segmentRows,
+        unit,
+      }),
+    [marketTitle, keyPlayersRaw, segmentRows, unit]
+  );
+  const tocHtml = useMemo(() => renderTocHtml(tocViewModel), [tocViewModel]);
 
   const template1Balanced = useMemo(
     () => autoBalanceTemplate1(previewHeight, template1ChartHeights),
@@ -438,6 +457,17 @@ export default function Home() {
     }
   };
 
+  const handleCopyTocHtml = async () => {
+    try {
+      await navigator.clipboard.writeText(tocHtml);
+      setTocCopyStatus("copied");
+      setTimeout(() => setTocCopyStatus("idle"), 1500);
+    } catch {
+      setTocCopyStatus("failed");
+      setTimeout(() => setTocCopyStatus("idle"), 1500);
+    }
+  };
+
   const handleClearAll = () => {
     setTemplateKind("template1");
     setDensity("spacious");
@@ -451,6 +481,7 @@ export default function Home() {
     setHistoricalDataText("2020 to 2025");
     setSegmentRows(DEFAULT_SEGMENT_ROWS);
     setMapping(DEFAULT_MAPPING);
+    setKeyPlayersRaw(DEFAULT_KEY_PLAYERS_RAW);
     setTableStyleMode("legacy");
     setIncludeRegionInTable(false);
     setPreviewWidth(900);
@@ -462,6 +493,7 @@ export default function Home() {
     setUseSolidBackground(false);
     setBackgroundColor("#e7e7e7");
     setCopyStatus("idle");
+    setTocCopyStatus("idle");
   };
 
   useEffect(() => {
@@ -683,6 +715,15 @@ export default function Home() {
                     <label className="ms-field">
                       <span>Unit of Market Size</span>
                       <Input value={unit} onChange={(event) => setUnit(event.target.value)} />
+                    </label>
+
+                    <label className="ms-field ms-field-full">
+                      <span>Key Players (comma/newline separated)</span>
+                      <Textarea
+                        value={keyPlayersRaw}
+                        onChange={(event) => setKeyPlayersRaw(event.target.value)}
+                        className="min-h-20 resize-y"
+                      />
                     </label>
                   </div>
                 </section>
@@ -933,10 +974,22 @@ export default function Home() {
                   onClick={handleCopyHtml}
                 >
                   {copyStatus === "copied"
-                    ? "HTML Copied"
+                    ? "Table HTML Copied"
                     : copyStatus === "failed"
                     ? "Copy Failed"
-                    : "Copy HTML"}
+                    : "Copy Table HTML"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="ms-secondary-btn ms-copy-btn ms-toolbar-btn"
+                  onClick={handleCopyTocHtml}
+                >
+                  {tocCopyStatus === "copied"
+                    ? "TOC HTML Copied"
+                    : tocCopyStatus === "failed"
+                    ? "Copy Failed"
+                    : "Copy TOC HTML"}
                 </Button>
                 <Button type="button" variant="outline" className="ms-secondary-btn ms-clear-btn ms-toolbar-btn" onClick={handleClearAll}>
                   Clear
@@ -1005,6 +1058,14 @@ export default function Home() {
                   ) : null}
 
                   <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
+                  <TocPreview
+                    html={tocHtml}
+                    segmentCount={tocViewModel.segments.length}
+                    keyPlayerCount={tocViewModel.keyPlayers.length}
+                    didTruncateSegments={tocViewModel.didTruncateSegments}
+                    didTruncateSegmentItems={tocViewModel.didTruncateSegmentItems}
+                    didTruncateKeyPlayers={tocViewModel.didTruncateKeyPlayers}
+                  />
                 </div>
               </div>
             </section>
