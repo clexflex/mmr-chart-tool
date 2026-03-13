@@ -14,6 +14,20 @@ export async function downloadElementAsWebp(
   options?: Partial<ExportOptions> & { width?: number; height?: number }
 ): Promise<void> {
   const config = { ...DEFAULT_EXPORT_OPTIONS, ...options };
+  const blob = await elementToWebpBlob(element, options);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = config.fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function elementToWebpBlob(
+  element: HTMLElement,
+  options?: Partial<ExportOptions> & { width?: number; height?: number }
+): Promise<Blob> {
+  const config = { ...DEFAULT_EXPORT_OPTIONS, ...options };
   const width = options?.width ?? Math.round(element.getBoundingClientRect().width);
   const height = options?.height ?? Math.round(element.getBoundingClientRect().height);
 
@@ -38,12 +52,7 @@ export async function downloadElementAsWebp(
     }
   }
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = config.fileName;
-  link.click();
-  URL.revokeObjectURL(url);
+  return blob;
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, format: string, quality: number): Promise<Blob> {
