@@ -175,8 +175,8 @@ export default function Home() {
   const [template4ChartHeights, setTemplate4ChartHeights] =
     useState<Template4ChartHeights>(DEFAULT_TEMPLATE4_CHART_HEIGHTS);
 
-  const [useSolidBackground, setUseSolidBackground] = useState(false);
-  const [backgroundColor, setBackgroundColor] = useState("#e7e7e7");
+  const [useSolidBackground, setUseSolidBackground] = useState(true);
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [isExporting, setIsExporting] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [tocCopyStatus, setTocCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
