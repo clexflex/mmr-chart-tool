@@ -5,12 +5,19 @@ import { SegmentationTablePreview } from "@/components/segmentation-table/Segmen
 import { TableStyleToggle } from "@/components/segmentation-table/TableStyleToggle";
 import { SegmentCatalogEditor } from "@/components/segments/SegmentCatalogEditor";
 import { SegmentMappingControls } from "@/components/segments/SegmentMappingControls";
+import { SmrColumnCard, SmrDonutCard, SmrPie2DCard, SmrPie3DCard } from "@/components/smr/SmrChartCards";
 import { TocPreview } from "@/components/toc/TocPreview";
 import { Template1Card } from "@/components/template1/Template1Card";
 import { Template2Card } from "@/components/template2/Template2Card";
 import { Template3Card } from "@/components/template3/Template3Card";
 import { Template4Card } from "@/components/template4/Template4Card";
 import { downloadElementAsWebp } from "@/lib/export/downloadWebp";
+import {
+  buildMaximizeChartOutputViewModels,
+  defaultMaximizeChartOutputMapping,
+  type MaximizeChartOutputKind,
+  type MaximizeChartOutputMapping,
+} from "@/lib/maximize/chartOutputs";
 import { deriveMarketSizes, resetDerivedOverrides } from "@/lib/market/deriveMarketSizes";
 import { resolveChartSeries } from "@/lib/snapshot/resolveChartSeries";
 import { buildSegmentationTableViewModel } from "@/lib/table/buildSegmentationTableViewModel";
@@ -127,6 +134,31 @@ const DEFAULT_MAPPING: SnapshotChartMapping = {
   },
 };
 
+const MAXIMIZE_CHART_OUTPUT_LABELS: Record<MaximizeChartOutputKind, string> = {
+  donut: "Donut",
+  pie3d: "Region Pie",
+  pie2d: "Flat Pie",
+  column: "Column",
+};
+
+const DEFAULT_MAXIMIZE_CHART_OUTPUT_MAPPING = defaultMaximizeChartOutputMapping(
+  SEGMENT_REGION_ID,
+  SEGMENT_PRIMARY_ID,
+  SEGMENT_TERTIARY_ID
+);
+
+const MAXIMIZE_CHART_CANVAS = {
+  width: 620,
+  height: 300,
+};
+
+const MAXIMIZE_CHART_LAYOUTS = {
+  donut: { chartSize: 236, plotHeight: 206 },
+  pie3d: { chartSize: 236, plotHeight: 206 },
+  pie2d: { chartSize: 236, plotHeight: 206 },
+  column: { chartSize: 468, plotHeight: 190 },
+} as const;
+
 const MIN_PREVIEW_WIDTH = 600;
 const MIN_PREVIEW_HEIGHT = 420;
 const MAX_PREVIEW_SIZE = 900;
@@ -158,6 +190,9 @@ export default function Home() {
   const [segmentRows, setSegmentRows] = useState<SegmentRowInput[]>(DEFAULT_SEGMENT_ROWS);
   const [mapping, setMapping] = useState<SnapshotChartMapping>(DEFAULT_MAPPING);
   const [keyPlayersRaw, setKeyPlayersRaw] = useState(DEFAULT_KEY_PLAYERS_RAW);
+  const [chartOutputMapping, setChartOutputMapping] = useState<MaximizeChartOutputMapping>(
+    DEFAULT_MAXIMIZE_CHART_OUTPUT_MAPPING
+  );
 
   const [tableStyleMode, setTableStyleMode] = useState<TableStyleMode>("legacy");
   const [includeRegionInTable, setIncludeRegionInTable] = useState(false);
@@ -183,6 +218,10 @@ export default function Home() {
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
 
   const previewRef = useRef<HTMLDivElement>(null);
+  const donutExportRef = useRef<HTMLDivElement>(null);
+  const pie3dExportRef = useRef<HTMLDivElement>(null);
+  const pie2dExportRef = useRef<HTMLDivElement>(null);
+  const columnExportRef = useRef<HTMLDivElement>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const sidebarResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
@@ -270,6 +309,18 @@ export default function Home() {
     const result = buildTemplate4ViewModel(snapshotContext.formInput);
     return { viewModel: result.viewModel, errors: [...combined, ...result.errors] };
   }, [mappingValidationMessage, snapshotContext, templateKind, unifiedInput]);
+
+  const chartOutputViewModels = useMemo(
+    () =>
+      buildMaximizeChartOutputViewModels({
+        marketTitle,
+        unit,
+        marketSize2025: derived.marketSize2025,
+        segmentRows,
+        mapping: chartOutputMapping,
+      }),
+    [chartOutputMapping, derived.marketSize2025, marketTitle, segmentRows, unit]
+  );
 
   const tableViewModel = useMemo(() => buildSegmentationTableViewModel(unifiedInput), [unifiedInput]);
   const tableHtml = useMemo(() => renderSegmentationTableHtml(tableViewModel), [tableViewModel]);
@@ -446,6 +497,35 @@ export default function Home() {
     }
   };
 
+  const handleChartOutputDownload = async (kind: MaximizeChartOutputKind) => {
+    const exportRef =
+      kind === "donut"
+        ? donutExportRef.current
+        : kind === "pie3d"
+        ? pie3dExportRef.current
+        : kind === "pie2d"
+        ? pie2dExportRef.current
+        : columnExportRef.current;
+
+    if (!exportRef || isExporting) {
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await downloadElementAsWebp(exportRef, {
+        fileName: buildChartOutputFileName(marketTitle, kind),
+        pixelRatio: 1,
+        quality: 0.78,
+        maxFileSizeKb: 80,
+        width: MAXIMIZE_CHART_CANVAS.width,
+        height: MAXIMIZE_CHART_CANVAS.height,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleCopyHtml = async () => {
     try {
       await navigator.clipboard.writeText(tableHtml);
@@ -482,6 +562,7 @@ export default function Home() {
     setSegmentRows(DEFAULT_SEGMENT_ROWS);
     setMapping(DEFAULT_MAPPING);
     setKeyPlayersRaw(DEFAULT_KEY_PLAYERS_RAW);
+    setChartOutputMapping(DEFAULT_MAXIMIZE_CHART_OUTPUT_MAPPING);
     setTableStyleMode("legacy");
     setIncludeRegionInTable(false);
     setPreviewWidth(900);
@@ -490,8 +571,8 @@ export default function Home() {
     setTemplate2ChartHeights(DEFAULT_SPLIT_CHART_HEIGHTS);
     setTemplate3ChartHeights(DEFAULT_SPLIT_CHART_HEIGHTS);
     setTemplate4ChartHeights(DEFAULT_TEMPLATE4_CHART_HEIGHTS);
-    setUseSolidBackground(false);
-    setBackgroundColor("#e7e7e7");
+    setUseSolidBackground(true);
+    setBackgroundColor("#ffffff");
     setCopyStatus("idle");
     setTocCopyStatus("idle");
   };
@@ -501,6 +582,10 @@ export default function Home() {
       colorInputRef.current?.focus();
     }
   }, [useSolidBackground]);
+
+  useEffect(() => {
+    setChartOutputMapping((current) => normalizeChartOutputMapping(segmentRows, current));
+  }, [segmentRows]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -665,6 +750,117 @@ export default function Home() {
                       Recalculate
                     </Button>
                   </div>
+
+                  <details className="ms-advanced-settings" open>
+                    <summary>Standalone chart exports</summary>
+                    <div className="ms-preview-settings-row ms-preview-settings-row-3">
+                      <label className="ms-field">
+                        <span>Donut Segment</span>
+                        <Select
+                          value={chartOutputMapping.donutSegmentId}
+                          onValueChange={(value) =>
+                            setChartOutputMapping((current) => ({
+                              ...current,
+                              donutSegmentId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select segment row" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {segmentRows.map((row) => (
+                              <SelectItem key={row.id} value={row.id}>
+                                {row.title || row.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </label>
+
+                      <label className="ms-field">
+                        <span>Region Pie Segment</span>
+                        <Select
+                          value={chartOutputMapping.pie3dSegmentId}
+                          onValueChange={(value) =>
+                            setChartOutputMapping((current) => ({
+                              ...current,
+                              pie3dSegmentId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select segment row" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {segmentRows.map((row) => (
+                              <SelectItem key={row.id} value={row.id}>
+                                {row.title || row.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </label>
+
+                      <label className="ms-field">
+                        <span>Flat Pie Segment</span>
+                        <Select
+                          value={chartOutputMapping.pie2dSegmentId}
+                          onValueChange={(value) =>
+                            setChartOutputMapping((current) => ({
+                              ...current,
+                              pie2dSegmentId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select segment row" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {segmentRows.map((row) => (
+                              <SelectItem key={row.id} value={row.id}>
+                                {row.title || row.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </label>
+
+                      <label className="ms-field">
+                        <span>Column Segment</span>
+                        <Select
+                          value={chartOutputMapping.columnSegmentId}
+                          onValueChange={(value) =>
+                            setChartOutputMapping((current) => ({
+                              ...current,
+                              columnSegmentId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select segment row" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {segmentRows.map((row) => (
+                              <SelectItem key={row.id} value={row.id}>
+                                {row.title || row.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </label>
+                    </div>
+
+                    {chartOutputViewModels.notes.length > 0 ? (
+                      <div className="smr-note-stack">
+                        {chartOutputViewModels.notes.map((note) => (
+                          <p key={note} className="ms-note">
+                            {note}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </details>
                 </section>
               </details>
 
@@ -962,7 +1158,7 @@ export default function Home() {
                 <Button
                   type="button"
                   className="ms-download-btn ms-toolbar-btn"
-                  onClick={handleDownload}
+                  onClick={() => void handleDownload()}
                   disabled={!activeViewModel || activeErrors.length > 0 || isExporting}
                 >
                   {isExporting ? "Exporting..." : "Download WebP"}
@@ -1066,12 +1262,144 @@ export default function Home() {
                     didTruncateSegmentItems={tocViewModel.didTruncateSegmentItems}
                     didTruncateKeyPlayers={tocViewModel.didTruncateKeyPlayers}
                   />
+
+                  <section className="ms-chart-output-section">
+                    <div className="ms-chart-output-section-head">
+                      <h2>Standalone chart previews</h2>
+                      <p>These exports use the selected segment rows and remain independent from the active Maximize template.</p>
+                    </div>
+
+                    <div className="ms-chart-output-grid">
+                      <section className="smr-preview-frame ms-chart-output-frame">
+                        <div className="smr-preview-frame-head ms-chart-output-frame-head">
+                          <span>{MAXIMIZE_CHART_OUTPUT_LABELS.donut}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="smr-preview-download-btn"
+                            onClick={() => handleChartOutputDownload("donut")}
+                            disabled={isExporting}
+                          >
+                            Download
+                          </Button>
+                        </div>
+                        <SmrDonutCard
+                          viewModel={chartOutputViewModels.donut}
+                          width={MAXIMIZE_CHART_CANVAS.width}
+                          height={MAXIMIZE_CHART_CANVAS.height}
+                          backgroundColor={activeBackgroundColor}
+                          layout={MAXIMIZE_CHART_LAYOUTS.donut}
+                        />
+                      </section>
+
+                      <section className="smr-preview-frame ms-chart-output-frame">
+                        <div className="smr-preview-frame-head ms-chart-output-frame-head">
+                          <span>{MAXIMIZE_CHART_OUTPUT_LABELS.pie3d}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="smr-preview-download-btn"
+                            onClick={() => handleChartOutputDownload("pie3d")}
+                            disabled={isExporting}
+                          >
+                            Download
+                          </Button>
+                        </div>
+                        <SmrPie3DCard
+                          viewModel={chartOutputViewModels.pie3d}
+                          width={MAXIMIZE_CHART_CANVAS.width}
+                          height={MAXIMIZE_CHART_CANVAS.height}
+                          backgroundColor={activeBackgroundColor}
+                          layout={MAXIMIZE_CHART_LAYOUTS.pie3d}
+                        />
+                      </section>
+
+                      <section className="smr-preview-frame ms-chart-output-frame">
+                        <div className="smr-preview-frame-head ms-chart-output-frame-head">
+                          <span>{MAXIMIZE_CHART_OUTPUT_LABELS.pie2d}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="smr-preview-download-btn"
+                            onClick={() => handleChartOutputDownload("pie2d")}
+                            disabled={isExporting}
+                          >
+                            Download
+                          </Button>
+                        </div>
+                        <SmrPie2DCard
+                          viewModel={chartOutputViewModels.pie2d}
+                          width={MAXIMIZE_CHART_CANVAS.width}
+                          height={MAXIMIZE_CHART_CANVAS.height}
+                          backgroundColor={activeBackgroundColor}
+                          layout={MAXIMIZE_CHART_LAYOUTS.pie2d}
+                        />
+                      </section>
+
+                      <section className="smr-preview-frame ms-chart-output-frame">
+                        <div className="smr-preview-frame-head ms-chart-output-frame-head">
+                          <span>{MAXIMIZE_CHART_OUTPUT_LABELS.column}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="smr-preview-download-btn"
+                            onClick={() => handleChartOutputDownload("column")}
+                            disabled={isExporting}
+                          >
+                            Download
+                          </Button>
+                        </div>
+                        <SmrColumnCard
+                          viewModel={chartOutputViewModels.column}
+                          width={MAXIMIZE_CHART_CANVAS.width}
+                          height={MAXIMIZE_CHART_CANVAS.height}
+                          backgroundColor={activeBackgroundColor}
+                          layout={MAXIMIZE_CHART_LAYOUTS.column}
+                        />
+                      </section>
+                    </div>
+                  </section>
                 </div>
               </div>
             </section>
           </main>
         </SidebarInset>
       </SidebarProvider>
+
+      <div className="smr-export-stage" aria-hidden>
+        <SmrDonutCard
+          ref={donutExportRef}
+          viewModel={chartOutputViewModels.donut}
+          width={MAXIMIZE_CHART_CANVAS.width}
+          height={MAXIMIZE_CHART_CANVAS.height}
+          backgroundColor={activeBackgroundColor}
+          layout={MAXIMIZE_CHART_LAYOUTS.donut}
+        />
+        <SmrPie3DCard
+          ref={pie3dExportRef}
+          viewModel={chartOutputViewModels.pie3d}
+          width={MAXIMIZE_CHART_CANVAS.width}
+          height={MAXIMIZE_CHART_CANVAS.height}
+          backgroundColor={activeBackgroundColor}
+          layout={MAXIMIZE_CHART_LAYOUTS.pie3d}
+        />
+        <SmrPie2DCard
+          ref={pie2dExportRef}
+          viewModel={chartOutputViewModels.pie2d}
+          width={MAXIMIZE_CHART_CANVAS.width}
+          height={MAXIMIZE_CHART_CANVAS.height}
+          backgroundColor={activeBackgroundColor}
+          layout={MAXIMIZE_CHART_LAYOUTS.pie2d}
+        />
+        <SmrColumnCard
+          ref={columnExportRef}
+          viewModel={chartOutputViewModels.column}
+          width={MAXIMIZE_CHART_CANVAS.width}
+          height={MAXIMIZE_CHART_CANVAS.height}
+          backgroundColor={activeBackgroundColor}
+          layout={MAXIMIZE_CHART_LAYOUTS.column}
+        />
+      </div>
     </div>
   );
 }
@@ -1424,6 +1752,21 @@ function scaleRelative(value: number, sourceMax: number, targetMax: number): num
   return Math.max(MIN_CHART_HEIGHT, Math.round((value / sourceMax) * targetMax));
 }
 
+function normalizeChartOutputMapping(
+  rows: SegmentRowInput[],
+  mapping: MaximizeChartOutputMapping
+): MaximizeChartOutputMapping {
+  const validIds = new Set(rows.map((row) => row.id));
+  const fallback = rows[0]?.id ?? "";
+
+  return {
+    donutSegmentId: validIds.has(mapping.donutSegmentId) ? mapping.donutSegmentId : fallback,
+    pie3dSegmentId: validIds.has(mapping.pie3dSegmentId) ? mapping.pie3dSegmentId : fallback,
+    pie2dSegmentId: validIds.has(mapping.pie2dSegmentId) ? mapping.pie2dSegmentId : fallback,
+    columnSegmentId: validIds.has(mapping.columnSegmentId) ? mapping.columnSegmentId : fallback,
+  };
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -1435,6 +1778,15 @@ function buildSnapshotFileName(marketTitle: string): string {
     .replace(/\s+/g, " ");
   const fileBase = cleaned.length > 0 ? cleaned : "Market Snapshot";
   return `${fileBase}.webp`;
+}
+
+function buildChartOutputFileName(marketTitle: string, kind: MaximizeChartOutputKind): string {
+  const cleaned = marketTitle
+    .trim()
+    .replace(/[<>:"/\\|?*]+/g, "")
+    .replace(/\s+/g, " ");
+  const fileBase = cleaned.length > 0 ? cleaned : "Market Snapshot";
+  return `${fileBase} ${MAXIMIZE_CHART_OUTPUT_LABELS[kind]}.webp`;
 }
 
 function densityStyle(density: DensityMode): CSSProperties {

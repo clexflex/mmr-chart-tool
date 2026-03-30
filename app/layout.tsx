@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RootHtml } from "./RootHtml";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,9 +12,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
+  return <RootHtml>{children}</RootHtml>;
 }

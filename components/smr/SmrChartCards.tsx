@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, type CSSProperties } from "react";
+import { buildSmrColumnSvgModel, SMR_COLUMN_LAYOUT_BOX, SMR_PIE_LAYOUT_BOX } from "@/lib/smr/chartGeometry";
 import type { SmrChartCardViewModel, SmrSeriesPoint } from "@/lib/smr/types";
 
 const SMR_COLORS = ["#3f6798", "#4b79b0", "#5684c0", "#8ea2c8", "#b0bcd3"];
@@ -30,8 +31,18 @@ export const SmrDonutCard = forwardRef<HTMLDivElement, CardProps>(function SmrDo
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-donut-layout">
         <div className="smr-pie-shell">
-          <svg viewBox="0 0 420 320" className="smr-chart-svg" aria-hidden>
-            {renderDonutSlices(viewModel.series, 165, 155, 110, 58)}
+          <svg
+            viewBox={`0 0 ${SMR_PIE_LAYOUT_BOX.viewBoxSize} ${SMR_PIE_LAYOUT_BOX.viewBoxSize}`}
+            className="smr-chart-svg"
+            aria-hidden
+          >
+            {renderDonutSlices(
+              viewModel.series,
+              SMR_PIE_LAYOUT_BOX.centerX,
+              SMR_PIE_LAYOUT_BOX.centerY,
+              SMR_PIE_LAYOUT_BOX.radius,
+              SMR_PIE_LAYOUT_BOX.innerRadius
+            )}
           </svg>
         </div>
         <PieLegend series={viewModel.series} />
@@ -54,8 +65,17 @@ export const SmrPie3DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-flat-pie-layout">
         <div className="smr-pie-shell">
-          <svg viewBox="0 0 420 320" className="smr-chart-svg" aria-hidden>
-            {renderPieSlices(viewModel.series, 165, 155, 110)}
+          <svg
+            viewBox={`0 0 ${SMR_PIE_LAYOUT_BOX.viewBoxSize} ${SMR_PIE_LAYOUT_BOX.viewBoxSize}`}
+            className="smr-chart-svg"
+            aria-hidden
+          >
+            {renderPieSlices(
+              viewModel.series,
+              SMR_PIE_LAYOUT_BOX.centerX,
+              SMR_PIE_LAYOUT_BOX.centerY,
+              SMR_PIE_LAYOUT_BOX.radius
+            )}
           </svg>
         </div>
         <PieLegend series={viewModel.series} />
@@ -78,8 +98,17 @@ export const SmrPie2DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-flat-pie-layout">
         <div className="smr-pie-shell">
-          <svg viewBox="0 0 420 320" className="smr-chart-svg" aria-hidden>
-            {renderPieSlices(viewModel.series, 165, 155, 110)}
+          <svg
+            viewBox={`0 0 ${SMR_PIE_LAYOUT_BOX.viewBoxSize} ${SMR_PIE_LAYOUT_BOX.viewBoxSize}`}
+            className="smr-chart-svg"
+            aria-hidden
+          >
+            {renderPieSlices(
+              viewModel.series,
+              SMR_PIE_LAYOUT_BOX.centerX,
+              SMR_PIE_LAYOUT_BOX.centerY,
+              SMR_PIE_LAYOUT_BOX.radius
+            )}
           </svg>
         </div>
         <PieLegend series={viewModel.series} />
@@ -97,20 +126,31 @@ export const SmrColumnCard = forwardRef<HTMLDivElement, CardProps>(function SmrC
     chartSize: layout?.chartSize ?? 500,
     plotHeight: layout?.plotHeight ?? 200,
   });
-  const svgModel = buildColumnSvgModel(viewModel.series, maxValue);
+  const svgModel = buildSmrColumnSvgModel(viewModel.series, maxValue);
 
   return (
     <div ref={ref} className="smr-card smr-figure-card" style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-column-stage">
-        <svg viewBox="0 0 560 280" className="smr-chart-svg" aria-hidden>
-          <line x1="46" y1="216" x2="514" y2="216" stroke="#c7ccd1" strokeWidth="2" />
+        <svg
+          viewBox={`0 0 ${SMR_COLUMN_LAYOUT_BOX.viewBoxWidth} ${SMR_COLUMN_LAYOUT_BOX.viewBoxHeight}`}
+          className="smr-chart-svg"
+          aria-hidden
+        >
+          <line
+            x1={SMR_COLUMN_LAYOUT_BOX.plotLeft}
+            y1={SMR_COLUMN_LAYOUT_BOX.axisY}
+            x2={SMR_COLUMN_LAYOUT_BOX.plotRight}
+            y2={SMR_COLUMN_LAYOUT_BOX.axisY}
+            stroke="#c7ccd1"
+            strokeWidth="2"
+          />
           {svgModel.items.map((item, index) => (
             <g key={`${item.label}-${index}`}>
               <rect x={item.barX} y={item.barY} width={item.barWidth} height={item.barHeight} fill={colorForIndex(index)} rx="2" />
               <text
                 x={item.centerX}
-                y="244"
+                y={SMR_COLUMN_LAYOUT_BOX.labelY}
                 textAnchor="middle"
                 className="smr-column-label-svg"
                 fontSize={item.fontSize}
@@ -142,13 +182,13 @@ function PieLegend({ series, inline = false }: { series: SmrSeriesPoint[]; inlin
   );
 }
 
-function renderPieSlices(series: SmrSeriesPoint[], cx: number, cy: number, radius: number) {
+function renderPieSlices(series: SmrSeriesPoint[], cx: number, cy: number, radius: number, radiusY = radius) {
   let startAngle = -90;
 
   return series.map((item, index) => {
     const sliceAngle = (item.value / 100) * 360;
     const endAngle = startAngle + sliceAngle;
-    const path = describeArcSlice(cx, cy, radius, startAngle, endAngle);
+    const path = describeArcSlice(cx, cy, radius, radiusY, startAngle, endAngle);
     startAngle = endAngle;
 
     return <path key={`${item.label}-${index}`} d={path} fill={colorForIndex(index)} stroke="#f3f4f6" strokeWidth="3" />;
@@ -168,12 +208,12 @@ function renderDonutSlices(series: SmrSeriesPoint[], cx: number, cy: number, rad
   });
 }
 
-function describeArcSlice(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
-  const start = polarToCartesian(cx, cy, radius, endAngle);
-  const end = polarToCartesian(cx, cy, radius, startAngle);
+function describeArcSlice(cx: number, cy: number, radiusX: number, radiusY: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesianEllipse(cx, cy, radiusX, radiusY, endAngle);
+  const end = polarToCartesianEllipse(cx, cy, radiusX, radiusY, startAngle);
   const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
 
-  return [`M ${cx} ${cy}`, `L ${start.x} ${start.y}`, `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`, "Z"].join(" ");
+  return [`M ${cx} ${cy}`, `L ${start.x} ${start.y}`, `A ${radiusX} ${radiusY} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`, "Z"].join(" ");
 }
 
 function describeDonutSlice(
@@ -207,65 +247,12 @@ function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees
   };
 }
 
-function buildColumnSvgModel(series: SmrSeriesPoint[], maxValue: number) {
-  const count = Math.max(series.length, 1);
-  const plotLeft = 56;
-  const plotWidth = 448;
-  const slotWidth = plotWidth / count;
-  const maxBarWidth = Math.min(54, slotWidth * 0.5);
-  const plotBottom = 216;
-  const plotTop = 38;
-  const plotHeight = plotBottom - plotTop;
-
+function polarToCartesianEllipse(cx: number, cy: number, radiusX: number, radiusY: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
   return {
-    items: series.map((item, index) => {
-      const barHeight = Math.max(18, Math.round((item.value / maxValue) * plotHeight));
-      const centerX = plotLeft + slotWidth * index + slotWidth / 2;
-      const barWidth = Math.min(maxBarWidth, Math.max(24, slotWidth * 0.48));
-      const barX = centerX - barWidth / 2;
-      const barY = plotBottom - barHeight;
-      const fontSize = columnLabelFontSize(item.label);
-
-      return {
-        ...item,
-        centerX,
-        barX,
-        barY,
-        barWidth,
-        barHeight,
-        fontSize,
-        lines: wrapColumnLabel(item.label, 16),
-      };
-    }),
+    x: cx + radiusX * Math.cos(angleInRadians),
+    y: cy + radiusY * Math.sin(angleInRadians),
   };
-}
-
-function wrapColumnLabel(label: string, maxLength: number) {
-  const words = label.split(/\s+/).filter(Boolean);
-  if (words.length <= 1 && label.length <= maxLength) return [label];
-
-  const lines: string[] = [];
-  let currentLine = "";
-
-  words.forEach((word) => {
-    const next = currentLine ? `${currentLine} ${word}` : word;
-    if (next.length <= maxLength || currentLine.length === 0) {
-      currentLine = next;
-      return;
-    }
-
-    lines.push(currentLine);
-    currentLine = word;
-  });
-
-  if (currentLine) lines.push(currentLine);
-  return lines.slice(0, 3);
-}
-
-function columnLabelFontSize(label: string) {
-  if (label.length > 28) return 11;
-  if (label.length > 18) return 12;
-  return 13;
 }
 
 function colorForIndex(index: number) {

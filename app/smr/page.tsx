@@ -101,31 +101,31 @@ const DEFAULT_SNAPSHOT_LAYOUT: SmrSnapshotLayout = {
 };
 
 const DEFAULT_DONUT_LAYOUT: SmrFigureLayout = {
-  chartSize: 260,
-  plotHeight: 220,
+  chartSize: 236,
+  plotHeight: 206,
 };
 
 const DEFAULT_PIE3D_LAYOUT: SmrFigureLayout = {
-  chartSize: 260,
-  plotHeight: 220,
+  chartSize: 236,
+  plotHeight: 206,
 };
 
 const DEFAULT_PIE2D_LAYOUT: SmrFigureLayout = {
-  chartSize: 260,
-  plotHeight: 220,
+  chartSize: 236,
+  plotHeight: 206,
 };
 
 const DEFAULT_COLUMN_LAYOUT: SmrFigureLayout = {
-  chartSize: 520,
-  plotHeight: 220,
+  chartSize: 468,
+  plotHeight: 190,
 };
 
 const DEFAULT_CANVAS_SIZES: Record<SmrOutputKind, SmrCanvasSize> = {
   snapshot: { width: 900, height: 600 },
-  donut: { width: 600, height: 300 },
-  pie3d: { width: 600, height: 300 },
-  pie2d: { width: 600, height: 300 },
-  column: { width: 600, height: 300 },
+  donut: { width: 620, height: 300 },
+  pie3d: { width: 620, height: 300 },
+  pie2d: { width: 620, height: 300 },
+  column: { width: 620, height: 300 },
 };
 
 const MIN_PREVIEW_WIDTH = 600;
