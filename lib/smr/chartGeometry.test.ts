@@ -27,10 +27,11 @@ test("column geometry keeps bars close to the card edges", () => {
 
   assert.ok(firstBar);
   assert.ok(lastBar);
-  assert.ok(SMR_COLUMN_LAYOUT_BOX.plotLeft >= 22);
-  assert.ok(SMR_COLUMN_LAYOUT_BOX.viewBoxWidth - SMR_COLUMN_LAYOUT_BOX.plotRight >= 22);
-  assert.ok(SMR_COLUMN_LAYOUT_BOX.plotBottom / SMR_COLUMN_LAYOUT_BOX.viewBoxHeight <= 0.76);
+  assert.ok(SMR_COLUMN_LAYOUT_BOX.plotLeft >= 30);
+  assert.ok(SMR_COLUMN_LAYOUT_BOX.viewBoxWidth - SMR_COLUMN_LAYOUT_BOX.plotRight >= 30);
+  assert.ok(SMR_COLUMN_LAYOUT_BOX.plotBottom / SMR_COLUMN_LAYOUT_BOX.viewBoxHeight <= 0.73);
+  assert.ok(SMR_COLUMN_LAYOUT_BOX.labelY - SMR_COLUMN_LAYOUT_BOX.axisY <= 24);
   assert.ok(firstBar.barX >= SMR_COLUMN_LAYOUT_BOX.plotLeft);
   assert.ok(lastBar.barX + lastBar.barWidth <= SMR_COLUMN_LAYOUT_BOX.plotRight);
-  assert.ok(firstBar.barWidth <= 58);
+  assert.ok(firstBar.barWidth <= 44);
 });

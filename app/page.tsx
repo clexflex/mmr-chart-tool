@@ -147,16 +147,25 @@ const DEFAULT_MAXIMIZE_CHART_OUTPUT_MAPPING = defaultMaximizeChartOutputMapping(
   SEGMENT_TERTIARY_ID
 );
 
-const MAXIMIZE_CHART_CANVAS = {
-  width: 620,
-  height: 300,
+const MAXIMIZE_CHART_PREVIEW_CANVAS: Record<MaximizeChartOutputKind, { width: number; height: number }> = {
+  donut: { width: 620, height: 300 },
+  pie3d: { width: 620, height: 300 },
+  pie2d: { width: 620, height: 300 },
+  column: { width: 620, height: 300 },
+};
+
+const MAXIMIZE_CHART_EXPORT_CANVAS: Record<MaximizeChartOutputKind, { width: number; height: number }> = {
+  donut: { width: 1180, height: 344 },
+  pie3d: { width: 1118, height: 315 },
+  pie2d: { width: 1118, height: 315 },
+  column: { width: 1214, height: 329 },
 };
 
 const MAXIMIZE_CHART_LAYOUTS = {
-  donut: { chartSize: 236, plotHeight: 206 },
-  pie3d: { chartSize: 236, plotHeight: 206 },
-  pie2d: { chartSize: 236, plotHeight: 206 },
-  column: { chartSize: 468, plotHeight: 190 },
+  donut: { chartSize: 296, plotHeight: 256 },
+  pie3d: { chartSize: 282, plotHeight: 240 },
+  pie2d: { chartSize: 282, plotHeight: 240 },
+  column: { chartSize: 760, plotHeight: 238 },
 } as const;
 
 const MIN_PREVIEW_WIDTH = 600;
@@ -383,6 +392,119 @@ export default function Home() {
       ? template3Balanced.wasAutoBalanced
       : template4Balanced.wasAutoBalanced;
 
+  const standaloneChartExportControls = (
+    <details className="ms-advanced-settings" open>
+      <summary>Standalone chart exports</summary>
+      <div className="ms-preview-settings-row ms-preview-settings-row-3">
+        <label className="ms-field">
+          <span>Donut Segment</span>
+          <Select
+            value={chartOutputMapping.donutSegmentId}
+            onValueChange={(value) =>
+              setChartOutputMapping((current) => ({
+                ...current,
+                donutSegmentId: value,
+              }))
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select segment row" />
+            </SelectTrigger>
+            <SelectContent>
+              {segmentRows.map((row) => (
+                <SelectItem key={row.id} value={row.id}>
+                  {row.title || row.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+
+        <label className="ms-field">
+          <span>Region Pie Segment</span>
+          <Select
+            value={chartOutputMapping.pie3dSegmentId}
+            onValueChange={(value) =>
+              setChartOutputMapping((current) => ({
+                ...current,
+                pie3dSegmentId: value,
+              }))
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select segment row" />
+            </SelectTrigger>
+            <SelectContent>
+              {segmentRows.map((row) => (
+                <SelectItem key={row.id} value={row.id}>
+                  {row.title || row.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+
+        <label className="ms-field">
+          <span>Flat Pie Segment</span>
+          <Select
+            value={chartOutputMapping.pie2dSegmentId}
+            onValueChange={(value) =>
+              setChartOutputMapping((current) => ({
+                ...current,
+                pie2dSegmentId: value,
+              }))
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select segment row" />
+            </SelectTrigger>
+            <SelectContent>
+              {segmentRows.map((row) => (
+                <SelectItem key={row.id} value={row.id}>
+                  {row.title || row.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+
+        <label className="ms-field">
+          <span>Column Segment</span>
+          <Select
+            value={chartOutputMapping.columnSegmentId}
+            onValueChange={(value) =>
+              setChartOutputMapping((current) => ({
+                ...current,
+                columnSegmentId: value,
+              }))
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select segment row" />
+            </SelectTrigger>
+            <SelectContent>
+              {segmentRows.map((row) => (
+                <SelectItem key={row.id} value={row.id}>
+                  {row.title || row.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+      </div>
+
+      {chartOutputViewModels.notes.length > 0 ? (
+        <div className="smr-note-stack">
+          {chartOutputViewModels.notes.map((note) => (
+            <p key={note} className="ms-note">
+              {note}
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </details>
+  );
+
   const handleKnownYearInputChange = (field: keyof KnownYearInput, value: number) => {
     setKnownYearInput((current) => {
       const next = {
@@ -518,8 +640,8 @@ export default function Home() {
         pixelRatio: 1,
         quality: 0.78,
         maxFileSizeKb: 80,
-        width: MAXIMIZE_CHART_CANVAS.width,
-        height: MAXIMIZE_CHART_CANVAS.height,
+        width: MAXIMIZE_CHART_EXPORT_CANVAS[kind].width,
+        height: MAXIMIZE_CHART_EXPORT_CANVAS[kind].height,
       });
     } finally {
       setIsExporting(false);
@@ -751,116 +873,6 @@ export default function Home() {
                     </Button>
                   </div>
 
-                  <details className="ms-advanced-settings" open>
-                    <summary>Standalone chart exports</summary>
-                    <div className="ms-preview-settings-row ms-preview-settings-row-3">
-                      <label className="ms-field">
-                        <span>Donut Segment</span>
-                        <Select
-                          value={chartOutputMapping.donutSegmentId}
-                          onValueChange={(value) =>
-                            setChartOutputMapping((current) => ({
-                              ...current,
-                              donutSegmentId: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select segment row" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {segmentRows.map((row) => (
-                              <SelectItem key={row.id} value={row.id}>
-                                {row.title || row.id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </label>
-
-                      <label className="ms-field">
-                        <span>Region Pie Segment</span>
-                        <Select
-                          value={chartOutputMapping.pie3dSegmentId}
-                          onValueChange={(value) =>
-                            setChartOutputMapping((current) => ({
-                              ...current,
-                              pie3dSegmentId: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select segment row" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {segmentRows.map((row) => (
-                              <SelectItem key={row.id} value={row.id}>
-                                {row.title || row.id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </label>
-
-                      <label className="ms-field">
-                        <span>Flat Pie Segment</span>
-                        <Select
-                          value={chartOutputMapping.pie2dSegmentId}
-                          onValueChange={(value) =>
-                            setChartOutputMapping((current) => ({
-                              ...current,
-                              pie2dSegmentId: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select segment row" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {segmentRows.map((row) => (
-                              <SelectItem key={row.id} value={row.id}>
-                                {row.title || row.id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </label>
-
-                      <label className="ms-field">
-                        <span>Column Segment</span>
-                        <Select
-                          value={chartOutputMapping.columnSegmentId}
-                          onValueChange={(value) =>
-                            setChartOutputMapping((current) => ({
-                              ...current,
-                              columnSegmentId: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select segment row" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {segmentRows.map((row) => (
-                              <SelectItem key={row.id} value={row.id}>
-                                {row.title || row.id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </label>
-                    </div>
-
-                    {chartOutputViewModels.notes.length > 0 ? (
-                      <div className="smr-note-stack">
-                        {chartOutputViewModels.notes.map((note) => (
-                          <p key={note} className="ms-note">
-                            {note}
-                          </p>
-                        ))}
-                      </div>
-                    ) : null}
-                  </details>
                 </section>
               </details>
 
@@ -1114,6 +1126,8 @@ export default function Home() {
                     ) : null}
                   </details>
 
+                  {standaloneChartExportControls}
+
                   {activeErrors.length > 0 ? (
                     <ul className="ms-errors">
                       {activeErrors.map((error) => (
@@ -1285,8 +1299,8 @@ export default function Home() {
                         </div>
                         <SmrDonutCard
                           viewModel={chartOutputViewModels.donut}
-                          width={MAXIMIZE_CHART_CANVAS.width}
-                          height={MAXIMIZE_CHART_CANVAS.height}
+                          width={MAXIMIZE_CHART_PREVIEW_CANVAS.donut.width}
+                          height={MAXIMIZE_CHART_PREVIEW_CANVAS.donut.height}
                           backgroundColor={activeBackgroundColor}
                           layout={MAXIMIZE_CHART_LAYOUTS.donut}
                         />
@@ -1307,8 +1321,8 @@ export default function Home() {
                         </div>
                         <SmrPie3DCard
                           viewModel={chartOutputViewModels.pie3d}
-                          width={MAXIMIZE_CHART_CANVAS.width}
-                          height={MAXIMIZE_CHART_CANVAS.height}
+                          width={MAXIMIZE_CHART_PREVIEW_CANVAS.pie3d.width}
+                          height={MAXIMIZE_CHART_PREVIEW_CANVAS.pie3d.height}
                           backgroundColor={activeBackgroundColor}
                           layout={MAXIMIZE_CHART_LAYOUTS.pie3d}
                         />
@@ -1329,8 +1343,8 @@ export default function Home() {
                         </div>
                         <SmrPie2DCard
                           viewModel={chartOutputViewModels.pie2d}
-                          width={MAXIMIZE_CHART_CANVAS.width}
-                          height={MAXIMIZE_CHART_CANVAS.height}
+                          width={MAXIMIZE_CHART_PREVIEW_CANVAS.pie2d.width}
+                          height={MAXIMIZE_CHART_PREVIEW_CANVAS.pie2d.height}
                           backgroundColor={activeBackgroundColor}
                           layout={MAXIMIZE_CHART_LAYOUTS.pie2d}
                         />
@@ -1351,8 +1365,8 @@ export default function Home() {
                         </div>
                         <SmrColumnCard
                           viewModel={chartOutputViewModels.column}
-                          width={MAXIMIZE_CHART_CANVAS.width}
-                          height={MAXIMIZE_CHART_CANVAS.height}
+                          width={MAXIMIZE_CHART_PREVIEW_CANVAS.column.width}
+                          height={MAXIMIZE_CHART_PREVIEW_CANVAS.column.height}
                           backgroundColor={activeBackgroundColor}
                           layout={MAXIMIZE_CHART_LAYOUTS.column}
                         />
@@ -1370,32 +1384,32 @@ export default function Home() {
         <SmrDonutCard
           ref={donutExportRef}
           viewModel={chartOutputViewModels.donut}
-          width={MAXIMIZE_CHART_CANVAS.width}
-          height={MAXIMIZE_CHART_CANVAS.height}
+          width={MAXIMIZE_CHART_EXPORT_CANVAS.donut.width}
+          height={MAXIMIZE_CHART_EXPORT_CANVAS.donut.height}
           backgroundColor={activeBackgroundColor}
           layout={MAXIMIZE_CHART_LAYOUTS.donut}
         />
         <SmrPie3DCard
           ref={pie3dExportRef}
           viewModel={chartOutputViewModels.pie3d}
-          width={MAXIMIZE_CHART_CANVAS.width}
-          height={MAXIMIZE_CHART_CANVAS.height}
+          width={MAXIMIZE_CHART_EXPORT_CANVAS.pie3d.width}
+          height={MAXIMIZE_CHART_EXPORT_CANVAS.pie3d.height}
           backgroundColor={activeBackgroundColor}
           layout={MAXIMIZE_CHART_LAYOUTS.pie3d}
         />
         <SmrPie2DCard
           ref={pie2dExportRef}
           viewModel={chartOutputViewModels.pie2d}
-          width={MAXIMIZE_CHART_CANVAS.width}
-          height={MAXIMIZE_CHART_CANVAS.height}
+          width={MAXIMIZE_CHART_EXPORT_CANVAS.pie2d.width}
+          height={MAXIMIZE_CHART_EXPORT_CANVAS.pie2d.height}
           backgroundColor={activeBackgroundColor}
           layout={MAXIMIZE_CHART_LAYOUTS.pie2d}
         />
         <SmrColumnCard
           ref={columnExportRef}
           viewModel={chartOutputViewModels.column}
-          width={MAXIMIZE_CHART_CANVAS.width}
-          height={MAXIMIZE_CHART_CANVAS.height}
+          width={MAXIMIZE_CHART_EXPORT_CANVAS.column.width}
+          height={MAXIMIZE_CHART_EXPORT_CANVAS.column.height}
           backgroundColor={activeBackgroundColor}
           layout={MAXIMIZE_CHART_LAYOUTS.column}
         />

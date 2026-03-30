@@ -9,14 +9,14 @@ export const SMR_PIE_LAYOUT_BOX = {
 } as const;
 
 export const SMR_COLUMN_LAYOUT_BOX = {
-  viewBoxWidth: 500,
-  viewBoxHeight: 224,
-  plotLeft: 24,
-  plotRight: 476,
-  plotTop: 16,
-  plotBottom: 166,
-  axisY: 166,
-  labelY: 194,
+  viewBoxWidth: 460,
+  viewBoxHeight: 196,
+  plotLeft: 32,
+  plotRight: 428,
+  plotTop: 12,
+  plotBottom: 142,
+  axisY: 142,
+  labelY: 164,
   labelMaxLength: 12,
 } as const;
 
@@ -24,14 +24,14 @@ export function buildSmrColumnSvgModel(series: SmrSeriesPoint[], maxValue: numbe
   const count = Math.max(series.length, 1);
   const plotWidth = SMR_COLUMN_LAYOUT_BOX.plotRight - SMR_COLUMN_LAYOUT_BOX.plotLeft;
   const slotWidth = plotWidth / count;
-  const maxBarWidth = Math.min(58, slotWidth * 0.48);
+  const maxBarWidth = Math.min(44, slotWidth * 0.46);
   const plotHeight = SMR_COLUMN_LAYOUT_BOX.plotBottom - SMR_COLUMN_LAYOUT_BOX.plotTop;
 
   return {
     items: series.map((item, index) => {
       const barHeight = Math.max(20, Math.round((item.value / maxValue) * plotHeight));
       const centerX = SMR_COLUMN_LAYOUT_BOX.plotLeft + slotWidth * index + slotWidth / 2;
-      const barWidth = Math.min(maxBarWidth, Math.max(24, slotWidth * 0.42));
+      const barWidth = Math.min(maxBarWidth, Math.max(22, slotWidth * 0.4));
       const barX = centerX - barWidth / 2;
       const barY = SMR_COLUMN_LAYOUT_BOX.plotBottom - barHeight;
       const fontSize = columnLabelFontSize(item.label);
