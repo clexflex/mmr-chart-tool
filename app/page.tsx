@@ -23,7 +23,7 @@ import { resolveChartSeries } from "@/lib/snapshot/resolveChartSeries";
 import { buildSegmentationTableViewModel } from "@/lib/table/buildSegmentationTableViewModel";
 import { renderSegmentationTableHtml } from "@/lib/table/renderSegmentationTableHtml";
 import { buildTocViewModel } from "@/lib/toc/buildTocViewModel";
-import { renderTocHtml } from "@/lib/toc/renderTocHtml";
+import { renderTocHtml, renderTocPreviewHtml } from "@/lib/toc/renderTocHtml";
 import { buildTemplate1ViewModel } from "@/lib/template1/generateData";
 import { buildTemplate2ViewModel } from "@/lib/template2/generateData";
 import { buildTemplate3ViewModel } from "@/lib/template3/generateData";
@@ -344,6 +344,7 @@ export default function Home() {
     [marketTitle, keyPlayersRaw, segmentRows, unit]
   );
   const tocHtml = useMemo(() => renderTocHtml(tocViewModel), [tocViewModel]);
+  const tocPreviewHtml = useMemo(() => renderTocPreviewHtml(tocViewModel), [tocViewModel]);
 
   const template1Balanced = useMemo(
     () => autoBalanceTemplate1(previewHeight, template1ChartHeights),
@@ -1269,7 +1270,7 @@ export default function Home() {
 
                   <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
                   <TocPreview
-                    html={tocHtml}
+                    html={tocPreviewHtml}
                     segmentCount={tocViewModel.segments.length}
                     keyPlayerCount={tocViewModel.keyPlayers.length}
                     didTruncateSegments={tocViewModel.didTruncateSegments}

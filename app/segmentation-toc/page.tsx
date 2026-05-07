@@ -14,7 +14,7 @@ import { deriveMarketSizes, resetDerivedOverrides } from "@/lib/market/deriveMar
 import { buildSegmentationTableViewModel } from "@/lib/table/buildSegmentationTableViewModel";
 import { renderSegmentationTableHtml } from "@/lib/table/renderSegmentationTableHtml";
 import { buildTocViewModel } from "@/lib/toc/buildTocViewModel";
-import { renderTocHtml } from "@/lib/toc/renderTocHtml";
+import { renderTocHtml, renderTocPreviewHtml } from "@/lib/toc/renderTocHtml";
 import type {
   ChartTemplateKind,
   DensityMode,
@@ -161,6 +161,7 @@ export default function SegmentationTocPage() {
     [marketTitle, keyPlayersRaw, segmentRows, unit]
   );
   const tocHtml = useMemo(() => renderTocHtml(tocViewModel), [tocViewModel]);
+  const tocPreviewHtml = useMemo(() => renderTocPreviewHtml(tocViewModel), [tocViewModel]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -477,7 +478,7 @@ export default function SegmentationTocPage() {
                 <div className="ms-preview-stack">
                   <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
                   <TocPreview
-                    html={tocHtml}
+                    html={tocPreviewHtml}
                     segmentCount={tocViewModel.segments.length}
                     keyPlayerCount={tocViewModel.keyPlayers.length}
                     didTruncateSegments={tocViewModel.didTruncateSegments}
