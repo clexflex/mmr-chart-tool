@@ -18,8 +18,7 @@ function renderTocCopyHtml(lines: TocLine[]): string {
       }
 
       const safeText = escapeHtml(line.text);
-      const indent = buildNestedIndent(line.text);
-      let content = `${indent}${safeText}`;
+      let content = safeText;
 
       if (line.italic) {
         content = `<em>${content}</em>`;
@@ -51,22 +50,4 @@ function renderPreviewLine(line: TocLine): string {
   }
 
   return `<div class="toc-line">${content}</div>`;
-}
-
-function buildNestedIndent(lineText: string): string {
-  const level = extractNumberingLevel(lineText);
-  if (level <= 2) {
-    return "";
-  }
-
-  const indentLevel = level - 2;
-  return "&nbsp;".repeat(indentLevel * 4);
-}
-
-function extractNumberingLevel(lineText: string): number {
-  const numbering = lineText.match(/^(\d+(?:\.\d+)*\.?)/)?.[1];
-  if (!numbering) return 0;
-  const cleaned = numbering.replace(/\.$/, "");
-  if (!cleaned) return 0;
-  return cleaned.split(".").length;
 }
