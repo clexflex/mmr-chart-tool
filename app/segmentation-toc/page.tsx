@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { SegmentationTablePreview } from "@/components/segmentation-table/SegmentationTablePreview";
 import { TableStyleToggle } from "@/components/segmentation-table/TableStyleToggle";
 import { SegmentCatalogEditor } from "@/components/segments/SegmentCatalogEditor";
@@ -8,6 +8,7 @@ import { TocPreview } from "@/components/toc/TocPreview";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Textarea } from "@/components/ui/textarea";
 import { deriveMarketSizes, resetDerivedOverrides } from "@/lib/market/deriveMarketSizes";
 import { buildSegmentationTableViewModel } from "@/lib/table/buildSegmentationTableViewModel";
@@ -79,6 +80,10 @@ const DEFAULT_MAPPING: SnapshotChartMapping = {
 const DEFAULT_KEY_PLAYERS_RAW = "Company1\nCompany2\nCompany3";
 const DEFAULT_TEMPLATE_KIND: ChartTemplateKind = "template1";
 const DEFAULT_DENSITY: DensityMode = "spacious";
+const MIN_SIDEBAR_WIDTH = 400;
+const DEFAULT_SIDEBAR_WIDTH = 440;
+const MAX_SIDEBAR_WIDTH = 620;
+const SIDEBAR_WIDTH_STORAGE_KEY = "segmentation-toc.sidebarWidthPx.v1";
 
 export default function SegmentationTocPage() {
   const [marketTitle, setMarketTitle] = useState("Global Market");
@@ -95,6 +100,16 @@ export default function SegmentationTocPage() {
   const [includeRegionInTable, setIncludeRegionInTable] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [tocCopyStatus, setTocCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [sidebarWidthPx, setSidebarWidthPx] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_SIDEBAR_WIDTH;
+    const saved = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
+    if (!saved) return DEFAULT_SIDEBAR_WIDTH;
+    const parsed = Number(saved);
+    if (!Number.isFinite(parsed)) return DEFAULT_SIDEBAR_WIDTH;
+    return clamp(Math.round(parsed), MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH);
+  });
+  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
+  const sidebarResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const unifiedInput: UnifiedMarketInput = useMemo(
     () => ({
@@ -146,6 +161,37 @@ export default function SegmentationTocPage() {
     [marketTitle, keyPlayersRaw, segmentRows, unit]
   );
   const tocHtml = useMemo(() => renderTocHtml(tocViewModel), [tocViewModel]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidthPx));
+  }, [sidebarWidthPx]);
+
+  useEffect(() => {
+    if (!isSidebarResizing) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const current = sidebarResizeRef.current;
+      if (!current) return;
+      const nextWidth = current.startWidth + (event.clientX - current.startX);
+      setSidebarWidthPx(clamp(Math.round(nextWidth), MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH));
+    };
+
+    const handleMouseUp = () => {
+      sidebarResizeRef.current = null;
+      setIsSidebarResizing(false);
+    };
+
+    document.body.classList.add("ms-is-resizing");
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.body.classList.remove("ms-is-resizing");
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isSidebarResizing]);
 
   const handleKnownYearInputChange = (field: keyof KnownYearInput, value: number) => {
     setKnownYearInput((current) => {
@@ -213,191 +259,242 @@ export default function SegmentationTocPage() {
     setTocCopyStatus("idle");
   };
 
+  const handleSidebarResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    sidebarResizeRef.current = {
+      startX: event.clientX,
+      startWidth: sidebarWidthPx,
+    };
+    setIsSidebarResizing(true);
+    event.preventDefault();
+  };
+
+  const handleSidebarResizeReset = () => {
+    setSidebarWidthPx(DEFAULT_SIDEBAR_WIDTH);
+  };
+
   return (
     <div className="app-shell">
-      <header className="ms-workspace-header ms-workspace-header-single">
-        <div className="ms-workspace-topbar">
-          <div className="ms-workspace-status">
-            <span className="ms-toolbar-label">Segmentation Table + TOC Builder</span>
-          </div>
+      <SidebarProvider defaultOpen style={{ "--sidebar-width": `${sidebarWidthPx}px` } as CSSProperties}>
+        <Sidebar variant="inset" collapsible="offcanvas" className="ms-editor-sidebar">
+          <SidebarHeader className="ms-sidebar-title-wrap">
+            <span className="ms-sidebar-title">Workspace Controls</span>
+          </SidebarHeader>
+          <SidebarContent className="ms-sidebar-scroll">
+            <section className="ms-sidebar-sections">
+              <details className="ms-collapsible ms-tone-1" open>
+                <summary>1. Market Basics</summary>
+                <section className="ms-section-block">
+                  <div className="ms-form-grid ms-form-grid-3">
+                    <TableStyleToggle value={tableStyleMode} onChange={setTableStyleMode} />
 
-          <div className="ms-workspace-actions">
-            <Button type="button" variant="outline" className="ms-secondary-btn ms-copy-btn ms-toolbar-btn" onClick={handleCopyHtml}>
-              {copyStatus === "copied" ? "Table HTML Copied" : copyStatus === "failed" ? "Copy Failed" : "Copy Table HTML"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="ms-secondary-btn ms-copy-btn ms-toolbar-btn"
-              onClick={handleCopyTocHtml}
-            >
-              {tocCopyStatus === "copied"
-                ? "TOC HTML Copied"
-                : tocCopyStatus === "failed"
-                ? "Copy Failed"
-                : "Copy TOC HTML"}
-            </Button>
-            <Button type="button" variant="outline" className="ms-secondary-btn ms-clear-btn ms-toolbar-btn" onClick={handleClear}>
-              Clear
-            </Button>
-          </div>
-        </div>
-      </header>
+                    <label className="ms-field">
+                      <span>Market Title</span>
+                      <Input value={marketTitle} onChange={(event) => setMarketTitle(event.target.value)} />
+                    </label>
 
-      <main className="ms-main-content" style={{ padding: "12px" }}>
-        <section className="ms-sidebar-sections" style={{ marginBottom: "12px" }}>
-          <details className="ms-collapsible ms-tone-1" open>
-            <summary>1. Market Basics</summary>
-            <section className="ms-section-block">
-              <div className="ms-form-grid ms-form-grid-3">
-                <TableStyleToggle value={tableStyleMode} onChange={setTableStyleMode} />
+                    <label className="ms-field">
+                      <span>Unit of Market Size</span>
+                      <Input value={unit} onChange={(event) => setUnit(event.target.value)} />
+                    </label>
 
-                <label className="ms-field">
-                  <span>Market Title</span>
-                  <Input value={marketTitle} onChange={(event) => setMarketTitle(event.target.value)} />
-                </label>
+                    <label className="ms-field ms-field-full">
+                      <span>Key Players (comma/newline separated)</span>
+                      <Textarea
+                        value={keyPlayersRaw}
+                        onChange={(event) => setKeyPlayersRaw(event.target.value)}
+                        className="min-h-20 resize-y"
+                      />
+                    </label>
+                  </div>
+                </section>
+              </details>
 
-                <label className="ms-field">
-                  <span>Unit of Market Size</span>
-                  <Input value={unit} onChange={(event) => setUnit(event.target.value)} />
-                </label>
+              <details className="ms-collapsible ms-tone-2" open>
+                <summary>2. Report Coverage</summary>
+                <section className="ms-section-block">
+                  <div className="ms-form-grid ms-form-grid-3">
+                    <label className="ms-field">
+                      <span>Base Year</span>
+                      <Input
+                        type="number"
+                        value={Number.isFinite(baseYear) ? baseYear : ""}
+                        onChange={(event) => setBaseYear(Number(event.target.value))}
+                      />
+                    </label>
 
-                <label className="ms-field ms-field-full">
-                  <span>Key Players (comma/newline separated)</span>
-                  <Textarea
-                    value={keyPlayersRaw}
-                    onChange={(event) => setKeyPlayersRaw(event.target.value)}
-                    className="min-h-20 resize-y"
-                  />
-                </label>
-              </div>
+                    <label className="ms-field">
+                      <span>Forecast Period</span>
+                      <Input value={forecastPeriod} onChange={(event) => setForecastPeriod(event.target.value)} />
+                    </label>
+
+                    <label className="ms-field ms-check-field">
+                      <span>Region in Table</span>
+                      <label className="ms-inline-check">
+                        <Checkbox
+                          checked={includeRegionInTable}
+                          onCheckedChange={(checked) => setIncludeRegionInTable(checked === true)}
+                        />
+                        Include region/country segments
+                      </label>
+                    </label>
+
+                    <label className="ms-field ms-field-full">
+                      <span>Historical Data</span>
+                      <Input value={historicalDataText} onChange={(event) => setHistoricalDataText(event.target.value)} />
+                    </label>
+                  </div>
+                </section>
+              </details>
+
+              <details className="ms-collapsible ms-tone-3" open>
+                <summary>3. Size Derivation</summary>
+                <section className="ms-section-block">
+                  <div className="ms-workspace-derivation">
+                    <label className="ms-field ms-workspace-field">
+                      <span>Known Year</span>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={Number.isFinite(knownYearInput.knownYear) ? knownYearInput.knownYear : ""}
+                        onChange={(event) => handleKnownYearInputChange("knownYear", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>Known Size</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(knownYearInput.knownMarketSize) ? knownYearInput.knownMarketSize : ""}
+                        onChange={(event) => handleKnownYearInputChange("knownMarketSize", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>CAGR (%)</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(knownYearInput.cagrPercent) ? knownYearInput.cagrPercent : ""}
+                        onChange={(event) => handleKnownYearInputChange("cagrPercent", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>Size 2025</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(derived.marketSize2025) ? derived.marketSize2025 : ""}
+                        onChange={(event) => handleDerivedValueChange("marketSize2025", Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="ms-field ms-workspace-field">
+                      <span>Size 2032</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
+                        onChange={(event) => handleDerivedValueChange("marketSize2032", Number(event.target.value))}
+                      />
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="ms-secondary-btn ms-recalculate-btn"
+                      onClick={() => setDerived(resetDerivedOverrides(knownYearInput))}
+                    >
+                      Recalculate
+                    </Button>
+                  </div>
+                </section>
+              </details>
+
+              <details className="ms-collapsible ms-tone-4" open>
+                <summary>4. Segment Catalog</summary>
+                <SegmentCatalogEditor rows={segmentRows} onRowsChange={setSegmentRows} />
+              </details>
             </section>
-          </details>
+          </SidebarContent>
+        </Sidebar>
+        <div
+          className={`ms-sidebar-resize-handle${isSidebarResizing ? " is-active" : ""}`}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          title="Drag to resize sidebar (double-click to reset)"
+          style={{ left: `${sidebarWidthPx - 4}px` }}
+          onMouseDown={handleSidebarResizeStart}
+          onDoubleClick={handleSidebarResizeReset}
+        />
 
-          <details className="ms-collapsible ms-tone-2" open>
-            <summary>2. Report Coverage</summary>
-            <section className="ms-section-block">
-              <div className="ms-form-grid ms-form-grid-3">
-                <label className="ms-field">
-                  <span>Base Year</span>
-                  <Input
-                    type="number"
-                    value={Number.isFinite(baseYear) ? baseYear : ""}
-                    onChange={(event) => setBaseYear(Number(event.target.value))}
-                  />
-                </label>
-
-                <label className="ms-field">
-                  <span>Forecast Period</span>
-                  <Input value={forecastPeriod} onChange={(event) => setForecastPeriod(event.target.value)} />
-                </label>
-
-                <label className="ms-field ms-check-field">
-                  <span>Region in Table</span>
-                  <label className="ms-inline-check">
-                    <Checkbox
-                      checked={includeRegionInTable}
-                      onCheckedChange={(checked) => setIncludeRegionInTable(checked === true)}
-                    />
-                    Include region/country segments
-                  </label>
-                </label>
-
-                <label className="ms-field ms-field-full">
-                  <span>Historical Data</span>
-                  <Input value={historicalDataText} onChange={(event) => setHistoricalDataText(event.target.value)} />
-                </label>
+        <SidebarInset className="ms-main-shell">
+          <header className="ms-workspace-header ms-workspace-header-single">
+            <div className="ms-workspace-topbar">
+              <div className="ms-workspace-status">
+                <SidebarTrigger className="ms-sidebar-trigger" />
+                <span className="ms-toolbar-label">Segmentation Table + TOC Builder</span>
               </div>
-            </section>
-          </details>
 
-          <details className="ms-collapsible ms-tone-3" open>
-            <summary>3. Size Derivation</summary>
-            <section className="ms-section-block">
-              <div className="ms-workspace-derivation">
-                <label className="ms-field ms-workspace-field">
-                  <span>Known Year</span>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    value={Number.isFinite(knownYearInput.knownYear) ? knownYearInput.knownYear : ""}
-                    onChange={(event) => handleKnownYearInputChange("knownYear", Number(event.target.value))}
-                  />
-                </label>
-                <label className="ms-field ms-workspace-field">
-                  <span>Known Size</span>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    value={Number.isFinite(knownYearInput.knownMarketSize) ? knownYearInput.knownMarketSize : ""}
-                    onChange={(event) => handleKnownYearInputChange("knownMarketSize", Number(event.target.value))}
-                  />
-                </label>
-                <label className="ms-field ms-workspace-field">
-                  <span>CAGR (%)</span>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    value={Number.isFinite(knownYearInput.cagrPercent) ? knownYearInput.cagrPercent : ""}
-                    onChange={(event) => handleKnownYearInputChange("cagrPercent", Number(event.target.value))}
-                  />
-                </label>
-                <label className="ms-field ms-workspace-field">
-                  <span>Size 2025</span>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    value={Number.isFinite(derived.marketSize2025) ? derived.marketSize2025 : ""}
-                    onChange={(event) => handleDerivedValueChange("marketSize2025", Number(event.target.value))}
-                  />
-                </label>
-                <label className="ms-field ms-workspace-field">
-                  <span>Size 2032</span>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
-                    onChange={(event) => handleDerivedValueChange("marketSize2032", Number(event.target.value))}
-                  />
-                </label>
+              <div className="ms-workspace-actions">
                 <Button
                   type="button"
                   variant="outline"
-                  className="ms-secondary-btn ms-recalculate-btn"
-                  onClick={() => setDerived(resetDerivedOverrides(knownYearInput))}
+                  className="ms-secondary-btn ms-copy-btn ms-toolbar-btn"
+                  onClick={handleCopyHtml}
                 >
-                  Recalculate
+                  {copyStatus === "copied" ? "Table HTML Copied" : copyStatus === "failed" ? "Copy Failed" : "Copy Table HTML"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="ms-secondary-btn ms-copy-btn ms-toolbar-btn"
+                  onClick={handleCopyTocHtml}
+                >
+                  {tocCopyStatus === "copied"
+                    ? "TOC HTML Copied"
+                    : tocCopyStatus === "failed"
+                    ? "Copy Failed"
+                    : "Copy TOC HTML"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="ms-secondary-btn ms-clear-btn ms-toolbar-btn"
+                  onClick={handleClear}
+                >
+                  Clear
                 </Button>
               </div>
-            </section>
-          </details>
-
-          <details className="ms-collapsible ms-tone-4" open>
-            <summary>4. Segment Catalog</summary>
-            <SegmentCatalogEditor rows={segmentRows} onRowsChange={setSegmentRows} />
-          </details>
-        </section>
-
-        <section className="ms-preview-area ms-preview-area-dual">
-          <div className="ms-preview-x-scroll">
-            <div className="ms-preview-stack">
-              <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
-              <TocPreview
-                html={tocHtml}
-                segmentCount={tocViewModel.segments.length}
-                keyPlayerCount={tocViewModel.keyPlayers.length}
-                didTruncateSegments={tocViewModel.didTruncateSegments}
-                didTruncateSegmentItems={tocViewModel.didTruncateSegmentItems}
-                didTruncateKeyPlayers={tocViewModel.didTruncateKeyPlayers}
-              />
             </div>
-          </div>
-        </section>
-      </main>
+          </header>
+
+          <main className="ms-main-content">
+            <section className="ms-preview-area ms-preview-area-dual">
+              <div className="ms-preview-x-scroll">
+                <div className="ms-preview-stack">
+                  <SegmentationTablePreview viewModel={tableViewModel} html={tableHtml} />
+                  <TocPreview
+                    html={tocHtml}
+                    segmentCount={tocViewModel.segments.length}
+                    keyPlayerCount={tocViewModel.keyPlayers.length}
+                    didTruncateSegments={tocViewModel.didTruncateSegments}
+                    didTruncateSegmentItems={tocViewModel.didTruncateSegmentItems}
+                    didTruncateKeyPlayers={tocViewModel.didTruncateKeyPlayers}
+                  />
+                </div>
+              </div>
+            </section>
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
     </div>
   );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
 }
