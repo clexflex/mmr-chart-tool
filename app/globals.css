@@ -1550,7 +1550,7 @@ input[type="number"]::-webkit-inner-spin-button {
   --smr-hbar-label-column: calc(74px * var(--smr-scale));
   display: grid;
   position: relative;
-  gap: calc(8px * var(--smr-scale));
+  gap: calc(6px * var(--smr-scale));
   padding: calc(2px * var(--smr-scale)) 0 calc(10px * var(--smr-scale));
   min-height: 0;
   height: var(--smr-snapshot-top-content-height);
@@ -1589,7 +1589,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .smr-hbar-track {
   position: relative;
-  height: calc(22px * var(--smr-scale));
+  height: calc(26px * var(--smr-scale));
   display: flex;
   align-items: center;
   padding-left: 0;
@@ -1844,7 +1844,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .smr-figure-title {
   margin: 0;
-  font-size: calc(16px * var(--smr-scale));
+  font-size: calc(20px * var(--smr-scale));
 }
 
 .smr-pie-legend {
@@ -1853,7 +1853,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .smr-pie-legend-row {
-  font-size: calc(12px * var(--smr-scale));
+  font-size: calc(16px * var(--smr-scale));
 }
 
 @media (max-width: 1480px) {

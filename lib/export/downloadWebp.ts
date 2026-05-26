@@ -4,9 +4,9 @@ import type { ExportOptions } from "@/lib/template1/types";
 const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   fileName: "market-snapshot-template1.webp",
   pixelRatio: 1,
-  quality: 0.78,
+  quality: 0.85,
   format: "image/webp",
-  maxFileSizeKb: 30,
+  maxFileSizeKb: 45,
 };
 
 export async function downloadElementAsWebp(
@@ -39,7 +39,7 @@ export async function elementToWebpBlob(
   });
 
   let blob = await canvasToBlob(canvas, config.format, config.quality);
-  const maxBytes = (config.maxFileSizeKb ?? 30) * 1024;
+  const maxBytes = (config.maxFileSizeKb ?? 45) * 1024;
 
   if (blob.size > maxBytes) {
     const qualitySteps = [0.72, 0.68, 0.64, 0.6, 0.56, 0.52, 0.48, 0.44, 0.4];

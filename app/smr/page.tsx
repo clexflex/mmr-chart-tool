@@ -364,8 +364,8 @@ export default function SmrPage() {
       await downloadElementAsWebp(element, {
         fileName: buildSmrFileName(marketTitle, kind),
         pixelRatio: 1,
-        quality: 0.78,
-        maxFileSizeKb: 80,
+        quality: 0.85,
+        maxFileSizeKb: 100,
         width: exportCanvasSize.width,
         height: exportCanvasSize.height,
       });

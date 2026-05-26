@@ -610,8 +610,8 @@ export default function Home() {
       await downloadElementAsWebp(previewRef.current, {
         fileName: buildSnapshotFileName(marketTitle),
         pixelRatio: 1,
-        quality: 0.78,
-        maxFileSizeKb: 30,
+        quality: 0.85,
+        maxFileSizeKb: 45,
         width: previewWidth,
         height: previewHeight,
       });
@@ -639,8 +639,8 @@ export default function Home() {
       await downloadElementAsWebp(exportRef, {
         fileName: buildChartOutputFileName(marketTitle, kind),
         pixelRatio: 1,
-        quality: 0.78,
-        maxFileSizeKb: 80,
+        quality: 0.85,
+        maxFileSizeKb: 100,
         width: MAXIMIZE_CHART_EXPORT_CANVAS[kind].width,
         height: MAXIMIZE_CHART_EXPORT_CANVAS[kind].height,
       });

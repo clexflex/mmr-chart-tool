@@ -17,9 +17,9 @@ export async function downloadSmrZip(entries: ZipEntry[], archiveName = "smr-sna
     const blob = await elementToWebpBlob(entry.element, {
       fileName: entry.fileName,
       pixelRatio: 1,
-      quality: 0.78,
+      quality: 0.85,
       format: "image/webp",
-      maxFileSizeKb: 60,
+      maxFileSizeKb: 75,
       width: entry.width,
       height: entry.height,
     });
