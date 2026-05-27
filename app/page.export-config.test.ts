@@ -32,11 +32,28 @@ test("market snapshot and smr exports use the updated webp quality and size caps
 test("shared smr styles use tighter snapshot bars and larger standalone typography", () => {
   const globalsCss = readProjectFile("app/globals.css");
 
-  assert.match(
-    globalsCss,
-    /\.smr-hbar-chart\s*\{[\s\S]*?gap:\s*calc\(6px \* var\(--smr-scale\)\);[\s\S]*?\}/
-  );
-  assert.match(globalsCss, /\.smr-hbar-track\s*\{[\s\S]*?height:\s*calc\(26px \* var\(--smr-scale\)\);[\s\S]*?\}/);
+  const hbarChartRule = globalsCss.match(/\.smr-hbar-chart\s*\{[\s\S]*?\}/);
+  const hbarTrackRule = globalsCss.match(/\.smr-hbar-track\s*\{[\s\S]*?\}/);
+
+  assert.ok(hbarChartRule, "Expected .smr-hbar-chart rule");
+  assert.ok(hbarTrackRule, "Expected .smr-hbar-track rule");
+  assert.match(hbarChartRule[0], /gap:\s*calc\(18px \* var\(--smr-scale\)\);/);
+  assert.match(hbarTrackRule[0], /height:\s*calc\(18px \* var\(--smr-scale\)\);/);
   assert.match(globalsCss, /\.smr-figure-title\s*\{[\s\S]*?font-size:\s*calc\(20px \* var\(--smr-scale\)\);[\s\S]*?\}/);
   assert.match(globalsCss, /\.smr-pie-legend-row\s*\{[\s\S]*?font-size:\s*calc\(16px \* var\(--smr-scale\)\);[\s\S]*?\}/);
+});
+
+test("main market snapshot horizontal bars keep gap and thickness aligned", () => {
+  const horizontalBarChart = readProjectFile("components/template1/charts/TypeHorizontalBarChart.tsx");
+  const mainPage = readProjectFile("app/page.tsx");
+
+  assert.match(mainPage, /typeChart:\s*220,/);
+  assert.match(horizontalBarChart, /const barThickness = 15;/);
+  assert.match(horizontalBarChart, /const rowGap =/);
+  assert.match(horizontalBarChart, /display: "grid",/);
+  assert.match(horizontalBarChart, /rowGap,/);
+  assert.match(horizontalBarChart, /gridTemplateRows: `repeat\(\$\{data\.length\}, \$\{barThickness\}px\)`,/);
+  assert.match(horizontalBarChart, /style=\{\{ minHeight: barThickness, marginBottom: 0 \}\}/);
+  assert.match(horizontalBarChart, /<div className="t1-hbar-track" style=\{\{ height: barThickness \}\}>/);
+  assert.match(horizontalBarChart, /className="t1-hbar-fill"[\s\S]*?height: barThickness,/);
 });

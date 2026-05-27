@@ -982,6 +982,8 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .t1-hbar-area {
   padding-left: 4px;
+  display: grid;
+  align-content: start;
 }
 
 .t1-hbar-row {
@@ -989,7 +991,7 @@ input[type="number"]::-webkit-inner-spin-button {
   grid-template-columns: minmax(62px, 34%) 1fr;
   gap: 8px;
   align-items: center;
-  margin-bottom: var(--density-row-gap);
+  margin-bottom: 0;
 }
 
 .t1-hbar-label {
@@ -1550,7 +1552,7 @@ input[type="number"]::-webkit-inner-spin-button {
   --smr-hbar-label-column: calc(74px * var(--smr-scale));
   display: grid;
   position: relative;
-  gap: calc(6px * var(--smr-scale));
+  gap: calc(18px * var(--smr-scale));
   padding: calc(2px * var(--smr-scale)) 0 calc(10px * var(--smr-scale));
   min-height: 0;
   height: var(--smr-snapshot-top-content-height);
@@ -1589,7 +1591,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .smr-hbar-track {
   position: relative;
-  height: calc(26px * var(--smr-scale));
+  height: calc(18px * var(--smr-scale));
   display: flex;
   align-items: center;
   padding-left: 0;

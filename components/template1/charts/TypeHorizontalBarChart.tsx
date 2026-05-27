@@ -14,15 +14,27 @@ export function TypeHorizontalBarChart({
   density,
 }: TypeHorizontalBarChartProps) {
   const maxValue = Math.max(...data.map((item) => item.value));
-  const rowGap = density === "compact" ? 6 : 8;
-  const rowHeight = Math.max(14, (chartHeight - rowGap * (data.length - 1)) / data.length);
+  const barThickness = 15;
+  const rowGap =
+    data.length > 1
+      ? Math.min(15, Math.max(0, (chartHeight - barThickness * data.length) / (data.length - 1)))
+      : 0;
 
   return (
     <section className="t1-type-chart">
       <h3 className="t1-chart-title">{title}</h3>
-      <div className="t1-hbar-area" style={{ height: chartHeight }}>
+      <div
+        className="t1-hbar-area"
+        style={{
+          height: chartHeight,
+          display: "grid",
+          rowGap,
+          gridTemplateRows: `repeat(${data.length}, ${barThickness}px)`,
+          alignContent: "start",
+        }}
+      >
         {data.map((item) => (
-          <div className="t1-hbar-row" key={item.label} style={{ minHeight: rowHeight, marginBottom: rowGap }}>
+          <div className="t1-hbar-row" key={item.label} style={{ minHeight: barThickness, marginBottom: 0 }}>
             <span
               className="t1-hbar-label"
               title={item.label}
@@ -30,10 +42,13 @@ export function TypeHorizontalBarChart({
             >
               {item.label}
             </span>
-            <div className="t1-hbar-track">
+            <div className="t1-hbar-track" style={{ height: barThickness }}>
               <div
                 className="t1-hbar-fill"
-                style={{ width: `${Math.max(7, (item.value / maxValue) * 100)}%` }}
+                style={{
+                  width: `${Math.max(7, (item.value / maxValue) * 100)}%`,
+                  height: barThickness,
+                }}
               />
             </div>
           </div>

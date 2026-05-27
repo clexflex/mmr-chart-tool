@@ -69,7 +69,7 @@ type Template4ChartHeights = {
 
 const DEFAULT_TEMPLATE1_CHART_HEIGHTS: Template1ChartHeights = {
   yearlyPlot: 163,
-  typeChart: 170,
+  typeChart: 220,
   regionChart: 170,
 };
 
