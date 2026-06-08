@@ -26,7 +26,7 @@ export function buildSegmentationTableViewModel(input: UnifiedMarketInput): Segm
     forecastPeriod: input.reportCoverage.forecastPeriod,
     historicalDataText: input.reportCoverage.historicalDataText,
     marketSizeBase: `${formatNumber(baseValue)} ${input.unit}`,
-    marketSizeTarget: `${formatNumber(input.derived.marketSize2032)} ${input.unit}`,
+    marketSizeTarget: `${formatNumber(input.derived.marketSize2034)} ${input.unit}`,
     cagrText: `${formatNumber(input.knownYearInput.cagrPercent)}%`,
     segmentRows,
     styleMode: input.tableStyleMode,

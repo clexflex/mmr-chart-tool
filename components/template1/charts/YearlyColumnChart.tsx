@@ -17,7 +17,7 @@ export function YearlyColumnChart({ title, data, unit, plotHeight }: YearlyColum
         <div className="t1-yearly-plot" style={{ height: plotHeight }}>
           {data.map((point) => {
             const barHeight = Math.max(8, (point.value / maxValue) * (plotHeight - 32));
-            const shouldAnnotate = point.year === 2025 || point.year === 2032;
+            const shouldAnnotate = point.year === 2025 || point.year === 2034;
             const showAboveBar = shouldAnnotate && barHeight < 40;
             const labelStyle = showAboveBar
               ? {

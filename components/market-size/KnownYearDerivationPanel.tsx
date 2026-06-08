@@ -6,7 +6,7 @@ type KnownYearDerivationPanelProps = {
   knownYearInput: KnownYearInput;
   derived: DerivedMarketSizes;
   onKnownYearInputChange: (field: keyof KnownYearInput, value: number) => void;
-  onDerivedValueChange: (field: "marketSize2025" | "marketSize2032", value: number) => void;
+  onDerivedValueChange: (field: "marketSize2025" | "marketSize2034", value: number) => void;
   onRecalculate: () => void;
 };
 
@@ -62,12 +62,12 @@ export function KnownYearDerivationPanel({
         </label>
 
         <label className="ms-field">
-          <span>Derived Market Size (2032)</span>
+          <span>Derived Market Size (2034)</span>
           <Input
             type="number"
             step="0.01"
-            value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
-            onChange={(event) => onDerivedValueChange("marketSize2032", Number(event.target.value))}
+            value={Number.isFinite(derived.marketSize2034) ? derived.marketSize2034 : ""}
+            onChange={(event) => onDerivedValueChange("marketSize2034", Number(event.target.value))}
           />
         </label>
 
@@ -76,7 +76,7 @@ export function KnownYearDerivationPanel({
             Recalculate from Known Year
           </Button>
           <p className="ms-inline-note">
-            Overrides: 2025 {derived.is2025Overridden ? "Yes" : "No"}, 2032 {derived.is2032Overridden ? "Yes" : "No"}
+            Overrides: 2025 {derived.is2025Overridden ? "Yes" : "No"}, 2034 {derived.is2034Overridden ? "Yes" : "No"}
           </p>
         </div>
       </div>

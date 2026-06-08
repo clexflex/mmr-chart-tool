@@ -39,12 +39,12 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
     errors.push("Market size for 2025 must be a positive number.");
   }
 
-  if (!Number.isFinite(input.marketSize2032) || input.marketSize2032 <= 0) {
-    errors.push("Market size for 2032 must be a positive number.");
+  if (!Number.isFinite(input.marketSize2034) || input.marketSize2034 <= 0) {
+    errors.push("Market size for 2034 must be a positive number.");
   }
 
-  if (input.marketSize2032 <= input.marketSize2025) {
-    errors.push("Market size for 2032 must be greater than 2025 for this template.");
+  if (input.marketSize2034 <= input.marketSize2025) {
+    errors.push("Market size for 2034 must be greater than 2025 for this template.");
   }
 
   const parsedPrimary = parseSegmentLabels(input.typeSegmentsRaw);
@@ -85,7 +85,7 @@ export function buildTemplate3ViewModel(input: SnapshotFormInput): BuildTemplate
       verticalSeries: createValueSeries(parsedPrimary.items, input.marketSize2025),
       marketSize: {
         value2025: Number(input.marketSize2025.toFixed(2)),
-        value2032: Number(input.marketSize2032.toFixed(2)),
+        value2034: Number(input.marketSize2034.toFixed(2)),
         unit,
       },
       meta: {

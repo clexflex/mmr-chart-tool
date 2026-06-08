@@ -12,9 +12,9 @@ export type KnownYearInput = {
 
 export type DerivedMarketSizes = {
   marketSize2025: number;
-  marketSize2032: number;
+  marketSize2034: number;
   is2025Overridden: boolean;
-  is2032Overridden: boolean;
+  is2034Overridden: boolean;
 };
 
 export type SegmentRowInput = {
@@ -76,7 +76,7 @@ export type SnapshotFormInput = {
   cagrPercent: number;
   dominantRegion: string;
   marketSize2025: number;
-  marketSize2032: number;
+  marketSize2034: number;
   unit: string;
   forecastPeriod: string;
   primarySegmentTitle: string;
@@ -131,7 +131,7 @@ export type Template3ViewModel = {
   verticalSeries: SegmentPoint[];
   marketSize: {
     value2025: number;
-    value2032: number;
+    value2034: number;
     unit: string;
   };
   meta: {
@@ -156,7 +156,7 @@ export type Template2ViewModel = {
   horizontalSeries: SegmentPoint[];
   marketSize: {
     value2025: number;
-    value2032: number;
+    value2034: number;
     unit: string;
   };
   meta: {
@@ -179,7 +179,7 @@ export type Template4ViewModel = {
   verticalSeries: SegmentPoint[];
   marketSize: {
     value2025: number;
-    value2032: number;
+    value2034: number;
     unit: string;
   };
   meta: {

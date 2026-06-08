@@ -149,7 +149,7 @@ export default function SmrPage() {
   const [marketTitle, setMarketTitle] = useState("Global Market");
   const [dominantRegion, setDominantRegion] = useState("North America");
   const [unit, setUnit] = useState("USD Billion");
-  const [forecastPeriod, setForecastPeriod] = useState("2026-2032");
+  const [forecastPeriod, setForecastPeriod] = useState("2026-2034");
   const [knownYearInput, setKnownYearInput] = useState<SmrKnownYearInput>(DEFAULT_KNOWN_YEAR_INPUT);
   const [derived, setDerived] = useState<SmrDerivedMarketSizes>(() => deriveMarketSizes(DEFAULT_KNOWN_YEAR_INPUT));
   const [segmentRows, setSegmentRows] = useState<SmrSegmentRowInput[]>(DEFAULT_SEGMENT_ROWS);
@@ -321,21 +321,21 @@ export default function SmrPage() {
       const recalculated = deriveMarketSizes(next);
       setDerived((currentDerived) => ({
         marketSize2025: currentDerived.is2025Overridden ? currentDerived.marketSize2025 : recalculated.marketSize2025,
-        marketSize2032: currentDerived.is2032Overridden ? currentDerived.marketSize2032 : recalculated.marketSize2032,
+        marketSize2034: currentDerived.is2034Overridden ? currentDerived.marketSize2034 : recalculated.marketSize2034,
         is2025Overridden: currentDerived.is2025Overridden,
-        is2032Overridden: currentDerived.is2032Overridden,
+        is2034Overridden: currentDerived.is2034Overridden,
       }));
 
       return next;
     });
   };
 
-  const handleDerivedValueChange = (field: "marketSize2025" | "marketSize2032", value: number) => {
+  const handleDerivedValueChange = (field: "marketSize2025" | "marketSize2034", value: number) => {
     setDerived((current) => ({
       ...current,
       [field]: Number.isFinite(value) ? value : Number.NaN,
       is2025Overridden: field === "marketSize2025" ? true : current.is2025Overridden,
-      is2032Overridden: field === "marketSize2032" ? true : current.is2032Overridden,
+      is2034Overridden: field === "marketSize2034" ? true : current.is2034Overridden,
     }));
   };
 
@@ -403,7 +403,7 @@ export default function SmrPage() {
     setMarketTitle("Global Market");
     setDominantRegion("North America");
     setUnit("USD Billion");
-    setForecastPeriod("2026-2032");
+    setForecastPeriod("2026-2034");
     setKnownYearInput(DEFAULT_KNOWN_YEAR_INPUT);
     setDerived(deriveMarketSizes(DEFAULT_KNOWN_YEAR_INPUT));
     setSegmentRows(DEFAULT_SEGMENT_ROWS);
@@ -512,13 +512,13 @@ export default function SmrPage() {
                       />
                     </label>
                     <label className="ms-field ms-workspace-field">
-                      <span>Size 2032</span>
+                      <span>Size 2034</span>
                       <Input
                         type="number"
                         inputMode="decimal"
                         step="0.01"
-                        value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
-                        onChange={(event) => handleDerivedValueChange("marketSize2032", Number(event.target.value))}
+                        value={Number.isFinite(derived.marketSize2034) ? derived.marketSize2034 : ""}
+                        onChange={(event) => handleDerivedValueChange("marketSize2034", Number(event.target.value))}
                       />
                     </label>
                     <Button type="button" variant="outline" className="ms-secondary-btn ms-recalculate-btn" onClick={() => setDerived(resetDerivedOverrides(knownYearInput))}>

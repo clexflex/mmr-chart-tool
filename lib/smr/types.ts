@@ -8,9 +8,9 @@ export type SmrKnownYearInput = {
 
 export type SmrDerivedMarketSizes = {
   marketSize2025: number;
-  marketSize2032: number;
+  marketSize2034: number;
   is2025Overridden: boolean;
-  is2032Overridden: boolean;
+  is2034Overridden: boolean;
 };
 
 export type SmrSegmentRowInput = {

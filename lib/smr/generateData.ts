@@ -73,7 +73,7 @@ function buildSnapshotViewModel(
     keyPlayerColumns: [keyPlayers.slice(0, splitIndex), keyPlayers.slice(splitIndex)],
     ribbons: [
       { id: "size-2025", text: `Market Size in 2025: ${formatMetric(input.derived.marketSize2025, input.unit)}` },
-      { id: "size-2032", text: `Market Size in 2032: ${formatMetric(input.derived.marketSize2032, input.unit)}` },
+      { id: "size-2034", text: `Market Size in 2034: ${formatMetric(input.derived.marketSize2034, input.unit)}` },
       { id: "cagr", text: `CAGR % (${input.forecastPeriod}): ${formatPercent(input.knownYearInput.cagrPercent)}` },
       { id: "region", text: `Highest Share by Region: ${input.dominantRegion.trim() || "North America"}` },
     ],

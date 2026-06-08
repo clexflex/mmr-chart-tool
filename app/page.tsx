@@ -192,7 +192,7 @@ export default function Home() {
   const [knownYearInput, setKnownYearInput] = useState<KnownYearInput>(DEFAULT_KNOWN_YEAR_INPUT);
   const [derived, setDerived] = useState<DerivedMarketSizes>(() => deriveMarketSizes(DEFAULT_KNOWN_YEAR_INPUT));
 
-  const [forecastPeriod, setForecastPeriod] = useState("2026-2032");
+  const [forecastPeriod, setForecastPeriod] = useState("2026-2034");
   const [baseYear, setBaseYear] = useState(2025);
   const [historicalDataText, setHistoricalDataText] = useState("2020 to 2025");
 
@@ -516,21 +516,21 @@ export default function Home() {
       const recalculated = deriveMarketSizes(next);
       setDerived((currentDerived) => ({
         marketSize2025: currentDerived.is2025Overridden ? currentDerived.marketSize2025 : recalculated.marketSize2025,
-        marketSize2032: currentDerived.is2032Overridden ? currentDerived.marketSize2032 : recalculated.marketSize2032,
+        marketSize2034: currentDerived.is2034Overridden ? currentDerived.marketSize2034 : recalculated.marketSize2034,
         is2025Overridden: currentDerived.is2025Overridden,
-        is2032Overridden: currentDerived.is2032Overridden,
+        is2034Overridden: currentDerived.is2034Overridden,
       }));
 
       return next;
     });
   };
 
-  const handleDerivedValueChange = (field: "marketSize2025" | "marketSize2032", value: number) => {
+  const handleDerivedValueChange = (field: "marketSize2025" | "marketSize2034", value: number) => {
     setDerived((current) => ({
       ...current,
       [field]: Number.isFinite(value) ? value : Number.NaN,
       is2025Overridden: field === "marketSize2025" ? true : current.is2025Overridden,
-      is2032Overridden: field === "marketSize2032" ? true : current.is2032Overridden,
+      is2034Overridden: field === "marketSize2034" ? true : current.is2034Overridden,
     }));
   };
 
@@ -679,7 +679,7 @@ export default function Home() {
     setUnit("USD Billion");
     setKnownYearInput(DEFAULT_KNOWN_YEAR_INPUT);
     setDerived(deriveMarketSizes(DEFAULT_KNOWN_YEAR_INPUT));
-    setForecastPeriod("2026-2032");
+    setForecastPeriod("2026-2034");
     setBaseYear(2025);
     setHistoricalDataText("2020 to 2025");
     setSegmentRows(DEFAULT_SEGMENT_ROWS);
@@ -860,13 +860,13 @@ export default function Home() {
                       />
                     </label>
                     <label className="ms-field ms-workspace-field">
-                      <span>Size 2032</span>
+                      <span>Size 2034</span>
                       <Input
                         type="number"
                         inputMode="decimal"
                         step="0.01"
-                        value={Number.isFinite(derived.marketSize2032) ? derived.marketSize2032 : ""}
-                        onChange={(event) => handleDerivedValueChange("marketSize2032", Number(event.target.value))}
+                        value={Number.isFinite(derived.marketSize2034) ? derived.marketSize2034 : ""}
+                        onChange={(event) => handleDerivedValueChange("marketSize2034", Number(event.target.value))}
                       />
                     </label>
                     <Button type="button" variant="outline" className="ms-secondary-btn ms-recalculate-btn" onClick={handleRecalculate}>
@@ -1551,7 +1551,7 @@ function createSnapshotInput(
     cagrPercent: input.knownYearInput.cagrPercent,
     dominantRegion: input.dominantRegion,
     marketSize2025: input.derived.marketSize2025,
-    marketSize2032: input.derived.marketSize2032,
+    marketSize2034: input.derived.marketSize2034,
     unit: input.unit,
     forecastPeriod: input.reportCoverage.forecastPeriod,
     primarySegmentTitle: primaryTitle,
@@ -1635,12 +1635,12 @@ function validateUnifiedInput(input: UnifiedMarketInput): string[] {
     errors.push("Derived market size for 2025 must be a positive number.");
   }
 
-  if (!Number.isFinite(input.derived.marketSize2032) || input.derived.marketSize2032 <= 0) {
-    errors.push("Derived market size for 2032 must be a positive number.");
+  if (!Number.isFinite(input.derived.marketSize2034) || input.derived.marketSize2034 <= 0) {
+    errors.push("Derived market size for 2034 must be a positive number.");
   }
 
-  if (input.derived.marketSize2032 <= input.derived.marketSize2025) {
-    errors.push("Market size in 2032 must be greater than market size in 2025.");
+  if (input.derived.marketSize2034 <= input.derived.marketSize2025) {
+    errors.push("Market size in 2034 must be greater than market size in 2025.");
   }
 
   if (!Number.isFinite(input.reportCoverage.baseYear) || !Number.isInteger(input.reportCoverage.baseYear)) {

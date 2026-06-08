@@ -31,12 +31,12 @@ export function buildTemplate1ViewModel(input: SnapshotFormInput): BuildViewMode
     errors.push("Market size for 2025 must be a positive number.");
   }
 
-  if (!Number.isFinite(input.marketSize2032) || input.marketSize2032 <= 0) {
-    errors.push("Market size for 2032 must be a positive number.");
+  if (!Number.isFinite(input.marketSize2034) || input.marketSize2034 <= 0) {
+    errors.push("Market size for 2034 must be a positive number.");
   }
 
-  if (input.marketSize2032 <= input.marketSize2025) {
-    errors.push("Market size for 2032 must be greater than 2025 for this template.");
+  if (input.marketSize2034 <= input.marketSize2025) {
+    errors.push("Market size for 2034 must be greater than 2025 for this template.");
   }
 
   const parsedTypes = parseSegmentLabels(input.typeSegmentsRaw);
@@ -56,7 +56,7 @@ export function buildTemplate1ViewModel(input: SnapshotFormInput): BuildViewMode
 
   const typeSeries = createTypeSeries(parsedTypes.items, input.marketSize2025);
   const regionSeries = createRegionSeries(parsedRegions.items);
-  const years = createYearSeries(input.marketSize2025, input.marketSize2032);
+  const years = createYearSeries(input.marketSize2025, input.marketSize2034);
   const cagrText = formatNumber(input.cagrPercent);
 
   return {
@@ -66,7 +66,7 @@ export function buildTemplate1ViewModel(input: SnapshotFormInput): BuildViewMode
         headerCagrLead: `${cagrText}% CAGR`,
         headerCagrBody: `${marketTitle} to grow at a CAGR of ${cagrText}% during ${forecastPeriod}`,
         mainTitle: marketTitle,
-        yearlyTitle: `${marketTitle} size in ${unit} (2020-2032)`,
+        yearlyTitle: `${marketTitle} size in ${unit} (2020-2034)`,
         typeTitle: `${marketTitle}, by ${primarySegmentTitle} in 2025 (${unitLabelForType(unit)})`,
         regionTitle: `${marketTitle}, by ${secondarySegmentTitle} in 2025 (%)`,
       },
@@ -82,11 +82,11 @@ export function buildTemplate1ViewModel(input: SnapshotFormInput): BuildViewMode
   };
 }
 
-function createYearSeries(value2025: number, value2032: number): YearPoint[] {
+function createYearSeries(value2025: number, value2034: number): YearPoint[] {
   const years: YearPoint[] = [];
-  const slope = (value2032 - value2025) / 7;
+  const slope = (value2034 - value2025) / 9;
 
-  for (let year = 2020; year <= 2032; year += 1) {
+  for (let year = 2020; year <= 2034; year += 1) {
     const interpolated = value2025 + (year - 2025) * slope;
     years.push({
       year,
@@ -95,9 +95,9 @@ function createYearSeries(value2025: number, value2032: number): YearPoint[] {
   }
 
   const idx2025 = years.findIndex((item) => item.year === 2025);
-  const idx2032 = years.findIndex((item) => item.year === 2032);
+  const idx2034 = years.findIndex((item) => item.year === 2034);
   years[idx2025].value = Number(value2025.toFixed(2));
-  years[idx2032].value = Number(value2032.toFixed(2));
+  years[idx2034].value = Number(value2034.toFixed(2));
 
   return years;
 }

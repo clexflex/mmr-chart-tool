@@ -218,19 +218,19 @@ function buildDetailedLines(context: TocBuilderContext): TocLine[] {
   addLine(`3.10. The Global Pandemic Impact on ${marketLabel}`);
   addSectionGap();
 
-  addLine(`4. ${marketLabel}: Global Market Size and Forecast by Segmentation (in ${unitLabel}) 2025-2032`, { strong: true });
+  addLine(`4. ${marketLabel}: Global Market Size and Forecast by Segmentation (in ${unitLabel}) 2025-2034`, { strong: true });
 
   for (let segmentIndex = 0; segmentIndex < segments.length; segmentIndex += 1) {
     const segmentNumber = segmentIndex + 1;
     const segment = segments[segmentIndex];
-    addLine(`4.${segmentNumber}. ${marketLabel} Size and Forecast, by ${segment.title} (2025-2032)`);
+    addLine(`4.${segmentNumber}. ${marketLabel} Size and Forecast, by ${segment.title} (2025-2034)`);
     for (let itemIndex = 0; itemIndex < segment.items.length; itemIndex += 1) {
       addLine(`4.${segmentNumber}.${itemIndex + 1}. ${segment.items[itemIndex]}`, { italic: true });
     }
   }
 
   const globalRegionSection = segments.length + 1;
-  addLine(`4.${globalRegionSection}. ${marketLabel} Size and Forecast, by Region (2025-2032)`);
+  addLine(`4.${globalRegionSection}. ${marketLabel} Size and Forecast, by Region (2025-2034)`);
   for (let regionIndex = 0; regionIndex < GLOBAL_REGIONS.length; regionIndex += 1) {
     addLine(`4.${globalRegionSection}.${regionIndex + 1}. ${GLOBAL_REGIONS[regionIndex]}`, { italic: true });
   }
@@ -272,7 +272,7 @@ function addRegionalChapter(
   unitLabel: string
 ) {
   lines.push({
-    text: `${chapter.chapter}. ${chapter.region} ${marketLabel} Size and Forecast by Segmentation (in ${unitLabel}) 2025-2032`,
+    text: `${chapter.chapter}. ${chapter.region} ${marketLabel} Size and Forecast by Segmentation (in ${unitLabel}) 2025-2034`,
     strong: true,
   });
 
@@ -280,7 +280,7 @@ function addRegionalChapter(
     const segmentNumber = segmentIndex + 1;
     const segment = segments[segmentIndex];
     lines.push({
-      text: `${chapter.chapter}.${segmentNumber}. ${chapter.region} ${marketLabel} Size and Forecast, by ${segment.title} (2025-2032)`,
+      text: `${chapter.chapter}.${segmentNumber}. ${chapter.region} ${marketLabel} Size and Forecast, by ${segment.title} (2025-2034)`,
     });
 
     if (chapter.includeSegmentItems) {
@@ -295,7 +295,7 @@ function addRegionalChapter(
 
   const countrySection = segments.length + 1;
   lines.push({
-    text: `${chapter.chapter}.${countrySection}. ${chapter.region} ${marketLabel} Size and Forecast, by Country (2025-2032)`,
+    text: `${chapter.chapter}.${countrySection}. ${chapter.region} ${marketLabel} Size and Forecast, by Country (2025-2034)`,
   });
 
   for (let countryIndex = 0; countryIndex < chapter.countries.length; countryIndex += 1) {
@@ -311,7 +311,7 @@ function addRegionalChapter(
       const segmentNumber = segmentIndex + 1;
       const segment = segments[segmentIndex];
       lines.push({
-        text: `${chapter.chapter}.${countrySection}.${countryNumber}.${segmentNumber}. ${country} ${marketLabel} Size and Forecast, by ${segment.title} (2025-2032)`,
+        text: `${chapter.chapter}.${countrySection}.${countryNumber}.${segmentNumber}. ${country} ${marketLabel} Size and Forecast, by ${segment.title} (2025-2034)`,
         italic: true,
       });
 

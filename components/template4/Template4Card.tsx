@@ -41,7 +41,7 @@ export const Template4Card = forwardRef<HTMLDivElement, Template4CardProps>(func
         <MarketSizeTable
           marketTitle={viewModel.text.mainTitle}
           value2025={viewModel.marketSize.value2025}
-          value2032={viewModel.marketSize.value2032}
+          value2034={viewModel.marketSize.value2034}
           unit={viewModel.marketSize.unit}
         />
       </div>

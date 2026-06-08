@@ -1,14 +1,14 @@
 import type { DerivedMarketSizes, KnownYearInput } from "@/lib/template1/types";
 
 const TARGET_2025 = 2025;
-const TARGET_2032 = 2032;
+const TARGET_2034 = 2034;
 
 export function deriveMarketSizes(input: KnownYearInput): DerivedMarketSizes {
   return {
     marketSize2025: roundToTwo(deriveValueAtYear(input, TARGET_2025)),
-    marketSize2032: roundToTwo(deriveValueAtYear(input, TARGET_2032)),
+    marketSize2034: roundToTwo(deriveValueAtYear(input, TARGET_2034)),
     is2025Overridden: false,
-    is2032Overridden: false,
+    is2034Overridden: false,
   };
 }
 
