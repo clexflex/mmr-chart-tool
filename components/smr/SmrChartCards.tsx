@@ -11,6 +11,7 @@ type CardProps = {
   width: number;
   height: number;
   backgroundColor: string;
+  showBorder?: boolean;
   layout?: {
     chartSize?: number;
     plotHeight?: number;
@@ -18,7 +19,7 @@ type CardProps = {
 };
 
 export const SmrDonutCard = forwardRef<HTMLDivElement, CardProps>(function SmrDonutCard(
-  { viewModel, width, height, backgroundColor, layout },
+  { viewModel, width, height, backgroundColor, showBorder = false, layout },
   ref
 ) {
   const style = createCardStyle(width, height, backgroundColor, {
@@ -27,7 +28,7 @@ export const SmrDonutCard = forwardRef<HTMLDivElement, CardProps>(function SmrDo
   });
 
   return (
-    <div ref={ref} className="smr-card smr-figure-card" style={style}>
+    <div ref={ref} className={`smr-card smr-figure-card${showBorder ? "" : " is-borderless"}`} style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-donut-layout">
         <div className="smr-pie-shell">
@@ -52,7 +53,7 @@ export const SmrDonutCard = forwardRef<HTMLDivElement, CardProps>(function SmrDo
 });
 
 export const SmrPie3DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPie3DCard(
-  { viewModel, width, height, backgroundColor, layout },
+  { viewModel, width, height, backgroundColor, showBorder = false, layout },
   ref
 ) {
   const style = createCardStyle(width, height, backgroundColor, {
@@ -61,7 +62,7 @@ export const SmrPie3DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
   });
 
   return (
-    <div ref={ref} className="smr-card smr-figure-card" style={style}>
+    <div ref={ref} className={`smr-card smr-figure-card${showBorder ? "" : " is-borderless"}`} style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-flat-pie-layout">
         <div className="smr-pie-shell">
@@ -85,7 +86,7 @@ export const SmrPie3DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
 });
 
 export const SmrPie2DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPie2DCard(
-  { viewModel, width, height, backgroundColor, layout },
+  { viewModel, width, height, backgroundColor, showBorder = false, layout },
   ref
 ) {
   const style = createCardStyle(width, height, backgroundColor, {
@@ -94,7 +95,7 @@ export const SmrPie2DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
   });
 
   return (
-    <div ref={ref} className="smr-card smr-figure-card" style={style}>
+    <div ref={ref} className={`smr-card smr-figure-card${showBorder ? "" : " is-borderless"}`} style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-flat-pie-layout">
         <div className="smr-pie-shell">
@@ -118,7 +119,7 @@ export const SmrPie2DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
 });
 
 export const SmrColumnCard = forwardRef<HTMLDivElement, CardProps>(function SmrColumnCard(
-  { viewModel, width, height, backgroundColor, layout },
+  { viewModel, width, height, backgroundColor, showBorder = false, layout },
   ref
 ) {
   const maxValue = Math.max(...viewModel.series.map((item) => item.value), 1);
@@ -129,7 +130,7 @@ export const SmrColumnCard = forwardRef<HTMLDivElement, CardProps>(function SmrC
   const svgModel = buildSmrColumnSvgModel(viewModel.series, maxValue);
 
   return (
-    <div ref={ref} className="smr-card smr-figure-card" style={style}>
+    <div ref={ref} className={`smr-card smr-figure-card${showBorder ? "" : " is-borderless"}`} style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
       <div className="smr-column-stage">
         <svg

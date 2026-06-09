@@ -1744,6 +1744,10 @@ input[type="number"]::-webkit-inner-spin-button {
   justify-items: stretch;
 }
 
+.smr-figure-card.is-borderless {
+  border: none;
+}
+
 .smr-donut-layout,
 .smr-flat-pie-layout {
   display: grid;
@@ -1814,6 +1818,12 @@ input[type="number"]::-webkit-inner-spin-button {
   background: rgba(255, 255, 255, 0.78);
   width: fit-content;
   max-width: 100%;
+}
+
+.smr-preview-frame.borderless {
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .smr-preview-frame.is-active .smr-preview-frame-head {

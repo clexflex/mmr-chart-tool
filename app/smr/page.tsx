@@ -164,6 +164,7 @@ export default function SmrPage() {
   const [pie3dLayout, setPie3dLayout] = useState<SmrFigureLayout>(DEFAULT_PIE3D_LAYOUT);
   const [pie2dLayout, setPie2dLayout] = useState<SmrFigureLayout>(DEFAULT_PIE2D_LAYOUT);
   const [columnLayout, setColumnLayout] = useState<SmrFigureLayout>(DEFAULT_COLUMN_LAYOUT);
+  const [showStandaloneBorders, setShowStandaloneBorders] = useState(false);
   const [sidebarWidthPx, setSidebarWidthPx] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -418,7 +419,13 @@ export default function SmrPage() {
     setPie3dLayout(DEFAULT_PIE3D_LAYOUT);
     setPie2dLayout(DEFAULT_PIE2D_LAYOUT);
     setColumnLayout(DEFAULT_COLUMN_LAYOUT);
+    setShowStandaloneBorders(false);
   };
+
+  const standaloneFrameClass = (kind: Exclude<SmrOutputKind, "snapshot">) =>
+    showStandaloneBorders
+      ? `smr-preview-frame${activeOutput === kind ? " is-active" : ""}`
+      : `smr-preview-frame borderless${activeOutput === kind ? " is-active" : ""}`;
 
   const focusOutput = (kind: SmrOutputKind) => {
     setActiveOutput(kind);
@@ -848,6 +855,13 @@ export default function SmrPage() {
                         }
                       />
                     </label>
+                    <label className="ms-field ms-check-field">
+                      <span>Show Borders</span>
+                      <label className="ms-inline-check">
+                        <Checkbox checked={showStandaloneBorders} onCheckedChange={(checked) => setShowStandaloneBorders(checked === true)} />
+                        Enable
+                      </label>
+                    </label>
                   </div>
                 </section>
               </details>
@@ -911,7 +925,10 @@ export default function SmrPage() {
                     />
                   </div>
 
-                  <div ref={donutPreviewRef} className={`smr-preview-frame${activeOutput === "donut" ? " is-active" : ""}`}>
+                  <div
+                    ref={donutPreviewRef}
+                    className={standaloneFrameClass("donut")}
+                  >
                     <div className="smr-preview-frame-head">
                       <span>Donut</span>
                       <Button type="button" variant="outline" className="smr-preview-download-btn" onClick={() => handleDownloadOutput("donut")} disabled={isExporting}>
@@ -923,11 +940,15 @@ export default function SmrPage() {
                       width={canvasSizes.donut.width}
                       height={canvasSizes.donut.height}
                       backgroundColor={activeBackgroundColor}
+                      showBorder={showStandaloneBorders}
                       layout={donutLayout}
                     />
                   </div>
 
-                  <div ref={pie3dPreviewRef} className={`smr-preview-frame${activeOutput === "pie3d" ? " is-active" : ""}`}>
+                  <div
+                    ref={pie3dPreviewRef}
+                    className={standaloneFrameClass("pie3d")}
+                  >
                     <div className="smr-preview-frame-head">
                       <span>Region Pie</span>
                       <Button type="button" variant="outline" className="smr-preview-download-btn" onClick={() => handleDownloadOutput("pie3d")} disabled={isExporting}>
@@ -939,11 +960,15 @@ export default function SmrPage() {
                       width={canvasSizes.pie3d.width}
                       height={canvasSizes.pie3d.height}
                       backgroundColor={activeBackgroundColor}
+                      showBorder={showStandaloneBorders}
                       layout={pie3dLayout}
                     />
                   </div>
 
-                  <div ref={pie2dPreviewRef} className={`smr-preview-frame${activeOutput === "pie2d" ? " is-active" : ""}`}>
+                  <div
+                    ref={pie2dPreviewRef}
+                    className={standaloneFrameClass("pie2d")}
+                  >
                     <div className="smr-preview-frame-head">
                       <span>Flat Pie</span>
                       <Button type="button" variant="outline" className="smr-preview-download-btn" onClick={() => handleDownloadOutput("pie2d")} disabled={isExporting}>
@@ -955,11 +980,15 @@ export default function SmrPage() {
                       width={canvasSizes.pie2d.width}
                       height={canvasSizes.pie2d.height}
                       backgroundColor={activeBackgroundColor}
+                      showBorder={showStandaloneBorders}
                       layout={pie2dLayout}
                     />
                   </div>
 
-                  <div ref={columnPreviewRef} className={`smr-preview-frame${activeOutput === "column" ? " is-active" : ""}`}>
+                  <div
+                    ref={columnPreviewRef}
+                    className={standaloneFrameClass("column")}
+                  >
                     <div className="smr-preview-frame-head">
                       <span>Column</span>
                       <Button type="button" variant="outline" className="smr-preview-download-btn" onClick={() => handleDownloadOutput("column")} disabled={isExporting}>
@@ -971,6 +1000,7 @@ export default function SmrPage() {
                       width={canvasSizes.column.width}
                       height={canvasSizes.column.height}
                       backgroundColor={activeBackgroundColor}
+                      showBorder={showStandaloneBorders}
                       layout={columnLayout}
                     />
                   </div>
@@ -990,10 +1020,10 @@ export default function SmrPage() {
           backgroundColor={activeBackgroundColor}
           layout={snapshotLayout}
         />
-        <SmrDonutCard ref={donutRef} viewModel={viewModels.donut} width={EXPORT_CANVAS_SIZES.donut.width} height={EXPORT_CANVAS_SIZES.donut.height} backgroundColor={activeBackgroundColor} layout={donutLayout} />
-        <SmrPie3DCard ref={pie3dRef} viewModel={viewModels.pie3d} width={EXPORT_CANVAS_SIZES.pie3d.width} height={EXPORT_CANVAS_SIZES.pie3d.height} backgroundColor={activeBackgroundColor} layout={pie3dLayout} />
-        <SmrPie2DCard ref={pie2dRef} viewModel={viewModels.pie2d} width={EXPORT_CANVAS_SIZES.pie2d.width} height={EXPORT_CANVAS_SIZES.pie2d.height} backgroundColor={activeBackgroundColor} layout={pie2dLayout} />
-        <SmrColumnCard ref={columnRef} viewModel={viewModels.column} width={EXPORT_CANVAS_SIZES.column.width} height={EXPORT_CANVAS_SIZES.column.height} backgroundColor={activeBackgroundColor} layout={columnLayout} />
+        <SmrDonutCard ref={donutRef} viewModel={viewModels.donut} width={EXPORT_CANVAS_SIZES.donut.width} height={EXPORT_CANVAS_SIZES.donut.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={donutLayout} />
+        <SmrPie3DCard ref={pie3dRef} viewModel={viewModels.pie3d} width={EXPORT_CANVAS_SIZES.pie3d.width} height={EXPORT_CANVAS_SIZES.pie3d.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={pie3dLayout} />
+        <SmrPie2DCard ref={pie2dRef} viewModel={viewModels.pie2d} width={EXPORT_CANVAS_SIZES.pie2d.width} height={EXPORT_CANVAS_SIZES.pie2d.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={pie2dLayout} />
+        <SmrColumnCard ref={columnRef} viewModel={viewModels.column} width={EXPORT_CANVAS_SIZES.column.width} height={EXPORT_CANVAS_SIZES.column.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={columnLayout} />
       </div>
     </div>
   );
