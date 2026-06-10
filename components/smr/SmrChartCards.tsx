@@ -2,6 +2,7 @@
 
 import { forwardRef, type CSSProperties } from "react";
 import { buildSmrColumnSvgModel, SMR_COLUMN_LAYOUT_BOX, SMR_PIE_LAYOUT_BOX } from "@/lib/smr/chartGeometry";
+import { fitStandaloneColumnLayout, fitStandaloneSideLegendPieLayout } from "@/lib/smr/layout";
 import type { SmrChartCardViewModel, SmrSeriesPoint } from "@/lib/smr/types";
 
 const SMR_COLORS = ["#3f6798", "#4b79b0", "#5684c0", "#8ea2c8", "#b0bcd3"];
@@ -22,15 +23,25 @@ export const SmrDonutCard = forwardRef<HTMLDivElement, CardProps>(function SmrDo
   { viewModel, width, height, backgroundColor, showBorder = false, layout },
   ref
 ) {
+  const fitted = fitStandaloneSideLegendPieLayout({
+    width,
+    height,
+    requestedChartSize: layout?.chartSize ?? 296,
+    requestedPlotHeight: layout?.plotHeight ?? 256,
+  });
   const style = createCardStyle(width, height, backgroundColor, {
-    chartSize: layout?.chartSize ?? 240,
-    plotHeight: layout?.plotHeight ?? 200,
+    chartSize: fitted.shellSize,
+    plotHeight: fitted.shellSize,
+    legendWidth: fitted.legendWidth,
+    legendBlockWidth: fitted.legendWidth,
+    groupWidth: fitted.groupWidth,
+    contentGap: fitted.gap,
   });
 
   return (
     <div ref={ref} className={`smr-card smr-figure-card${showBorder ? "" : " is-borderless"}`} style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
-      <div className="smr-donut-layout">
+      <div className="smr-side-pie-layout">
         <div className="smr-pie-shell">
           <svg
             viewBox={`0 0 ${SMR_PIE_LAYOUT_BOX.viewBoxSize} ${SMR_PIE_LAYOUT_BOX.viewBoxSize}`}
@@ -56,15 +67,25 @@ export const SmrPie3DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
   { viewModel, width, height, backgroundColor, showBorder = false, layout },
   ref
 ) {
+  const fitted = fitStandaloneSideLegendPieLayout({
+    width,
+    height,
+    requestedChartSize: layout?.chartSize ?? 282,
+    requestedPlotHeight: layout?.plotHeight ?? 240,
+  });
   const style = createCardStyle(width, height, backgroundColor, {
-    chartSize: layout?.chartSize ?? 240,
-    plotHeight: layout?.plotHeight ?? 200,
+    chartSize: fitted.shellSize,
+    plotHeight: fitted.shellSize,
+    legendWidth: fitted.legendWidth,
+    legendBlockWidth: fitted.legendWidth,
+    groupWidth: fitted.groupWidth,
+    contentGap: fitted.gap,
   });
 
   return (
     <div ref={ref} className={`smr-card smr-figure-card${showBorder ? "" : " is-borderless"}`} style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
-      <div className="smr-flat-pie-layout">
+      <div className="smr-side-pie-layout">
         <div className="smr-pie-shell">
           <svg
             viewBox={`0 0 ${SMR_PIE_LAYOUT_BOX.viewBoxSize} ${SMR_PIE_LAYOUT_BOX.viewBoxSize}`}
@@ -89,15 +110,25 @@ export const SmrPie2DCard = forwardRef<HTMLDivElement, CardProps>(function SmrPi
   { viewModel, width, height, backgroundColor, showBorder = false, layout },
   ref
 ) {
+  const fitted = fitStandaloneSideLegendPieLayout({
+    width,
+    height,
+    requestedChartSize: layout?.chartSize ?? 282,
+    requestedPlotHeight: layout?.plotHeight ?? 240,
+  });
   const style = createCardStyle(width, height, backgroundColor, {
-    chartSize: layout?.chartSize ?? 240,
-    plotHeight: layout?.plotHeight ?? 200,
+    chartSize: fitted.shellSize,
+    plotHeight: fitted.shellSize,
+    legendWidth: fitted.legendWidth,
+    legendBlockWidth: fitted.legendWidth,
+    groupWidth: fitted.groupWidth,
+    contentGap: fitted.gap,
   });
 
   return (
     <div ref={ref} className={`smr-card smr-figure-card${showBorder ? "" : " is-borderless"}`} style={style}>
       <h2 className="smr-figure-title">{viewModel.chartTitle}</h2>
-      <div className="smr-flat-pie-layout">
+      <div className="smr-side-pie-layout">
         <div className="smr-pie-shell">
           <svg
             viewBox={`0 0 ${SMR_PIE_LAYOUT_BOX.viewBoxSize} ${SMR_PIE_LAYOUT_BOX.viewBoxSize}`}
@@ -123,9 +154,15 @@ export const SmrColumnCard = forwardRef<HTMLDivElement, CardProps>(function SmrC
   ref
 ) {
   const maxValue = Math.max(...viewModel.series.map((item) => item.value), 1);
+  const fitted = fitStandaloneColumnLayout({
+    width,
+    height,
+    requestedChartSize: layout?.chartSize ?? 500,
+    requestedPlotHeight: layout?.plotHeight ?? 200,
+  });
   const style = createCardStyle(width, height, backgroundColor, {
-    chartSize: layout?.chartSize ?? 500,
-    plotHeight: layout?.plotHeight ?? 200,
+    chartSize: fitted.stageWidth,
+    plotHeight: fitted.stageHeight,
   });
   const svgModel = buildSmrColumnSvgModel(viewModel.series, maxValue);
 
@@ -264,7 +301,15 @@ function createCardStyle(
   width: number,
   height: number,
   backgroundColor: string,
-  layout: { chartSize: number; plotHeight: number }
+  layout: {
+    chartSize: number;
+    plotHeight: number;
+    legendWidth?: number;
+    legendColumns?: number;
+    legendBlockWidth?: number;
+    groupWidth?: number;
+    contentGap?: number;
+  }
 ) {
   const scale = Math.min(1.12, Math.max(1, width / 600));
 
@@ -275,5 +320,10 @@ function createCardStyle(
     ["--smr-scale" as never]: scale,
     ["--smr-figure-chart-size" as never]: `${layout.chartSize}px`,
     ["--smr-figure-plot-height" as never]: `${layout.plotHeight}px`,
+    ["--smr-figure-legend-width" as never]: `${layout.legendWidth ?? 220}px`,
+    ["--smr-figure-legend-columns" as never]: layout.legendColumns ?? 1,
+    ["--smr-figure-legend-block-width" as never]: `${layout.legendBlockWidth ?? layout.legendWidth ?? 220}px`,
+    ["--smr-figure-group-width" as never]: `${layout.groupWidth ?? layout.chartSize}px`,
+    ["--smr-figure-content-gap" as never]: `${layout.contentGap ?? 14}px`,
   } as CSSProperties;
 }

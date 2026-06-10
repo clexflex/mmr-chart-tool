@@ -128,12 +128,12 @@ const DEFAULT_CANVAS_SIZES: Record<SmrOutputKind, SmrCanvasSize> = {
   column: { width: 620, height: 300 },
 };
 
-const EXPORT_CANVAS_SIZES: Record<SmrOutputKind, SmrCanvasSize> = {
+const FIXED_EXPORT_CANVAS_SIZES: Record<SmrOutputKind, SmrCanvasSize> = {
   snapshot: { width: 900, height: 600 },
-  donut: { width: 1180, height: 344 },
-  pie3d: { width: 1118, height: 315 },
-  pie2d: { width: 1118, height: 315 },
-  column: { width: 1214, height: 329 },
+  donut: { width: 620, height: 300 },
+  pie3d: { width: 620, height: 300 },
+  pie2d: { width: 620, height: 300 },
+  column: { width: 620, height: 300 },
 };
 
 const MIN_PREVIEW_WIDTH = 600;
@@ -144,6 +144,10 @@ const MIN_SIDEBAR_WIDTH = 400;
 const DEFAULT_SIDEBAR_WIDTH = 440;
 const MAX_SIDEBAR_WIDTH = 620;
 const SIDEBAR_WIDTH_STORAGE_KEY = "smr.sidebarWidthPx.v1";
+
+function resolveExportCanvasSize(kind: SmrOutputKind, canvasSizes: Record<SmrOutputKind, SmrCanvasSize>) {
+  return kind === "snapshot" ? FIXED_EXPORT_CANVAS_SIZES.snapshot : canvasSizes[kind];
+}
 
 export default function SmrPage() {
   const [marketTitle, setMarketTitle] = useState("Global Market");
@@ -358,7 +362,7 @@ export default function SmrPage() {
     const element = exportRefs[kind].current;
     if (!element || isExporting) return;
 
-    const exportCanvasSize = EXPORT_CANVAS_SIZES[kind];
+    const exportCanvasSize = resolveExportCanvasSize(kind, canvasSizes);
 
     setIsExporting(true);
     try {
@@ -384,8 +388,8 @@ export default function SmrPage() {
           kind,
           element,
           fileName: buildSmrFileName(marketTitle, kind),
-          width: EXPORT_CANVAS_SIZES[kind].width,
-          height: EXPORT_CANVAS_SIZES[kind].height,
+          width: resolveExportCanvasSize(kind, canvasSizes).width,
+          height: resolveExportCanvasSize(kind, canvasSizes).height,
         };
       })
       .filter((entry): entry is { kind: SmrOutputKind; element: HTMLDivElement; fileName: string; width: number; height: number } => entry !== null);
@@ -1015,15 +1019,15 @@ export default function SmrPage() {
         <SmrSnapshotCard
           ref={snapshotRef}
           viewModel={viewModels.snapshot}
-          width={EXPORT_CANVAS_SIZES.snapshot.width}
-          height={EXPORT_CANVAS_SIZES.snapshot.height}
+          width={resolveExportCanvasSize("snapshot", canvasSizes).width}
+          height={resolveExportCanvasSize("snapshot", canvasSizes).height}
           backgroundColor={activeBackgroundColor}
           layout={snapshotLayout}
         />
-        <SmrDonutCard ref={donutRef} viewModel={viewModels.donut} width={EXPORT_CANVAS_SIZES.donut.width} height={EXPORT_CANVAS_SIZES.donut.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={donutLayout} />
-        <SmrPie3DCard ref={pie3dRef} viewModel={viewModels.pie3d} width={EXPORT_CANVAS_SIZES.pie3d.width} height={EXPORT_CANVAS_SIZES.pie3d.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={pie3dLayout} />
-        <SmrPie2DCard ref={pie2dRef} viewModel={viewModels.pie2d} width={EXPORT_CANVAS_SIZES.pie2d.width} height={EXPORT_CANVAS_SIZES.pie2d.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={pie2dLayout} />
-        <SmrColumnCard ref={columnRef} viewModel={viewModels.column} width={EXPORT_CANVAS_SIZES.column.width} height={EXPORT_CANVAS_SIZES.column.height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={columnLayout} />
+        <SmrDonutCard ref={donutRef} viewModel={viewModels.donut} width={resolveExportCanvasSize("donut", canvasSizes).width} height={resolveExportCanvasSize("donut", canvasSizes).height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={donutLayout} />
+        <SmrPie3DCard ref={pie3dRef} viewModel={viewModels.pie3d} width={resolveExportCanvasSize("pie3d", canvasSizes).width} height={resolveExportCanvasSize("pie3d", canvasSizes).height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={pie3dLayout} />
+        <SmrPie2DCard ref={pie2dRef} viewModel={viewModels.pie2d} width={resolveExportCanvasSize("pie2d", canvasSizes).width} height={resolveExportCanvasSize("pie2d", canvasSizes).height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={pie2dLayout} />
+        <SmrColumnCard ref={columnRef} viewModel={viewModels.column} width={resolveExportCanvasSize("column", canvasSizes).width} height={resolveExportCanvasSize("column", canvasSizes).height} backgroundColor={activeBackgroundColor} showBorder={showStandaloneBorders} layout={columnLayout} />
       </div>
     </div>
   );

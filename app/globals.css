@@ -1691,8 +1691,11 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .smr-chart-svg {
-  width: 100%;
-  height: 100%;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   overflow: visible;
 }
 
@@ -1751,14 +1754,27 @@ input[type="number"]::-webkit-inner-spin-button {
 .smr-donut-layout,
 .smr-flat-pie-layout {
   display: grid;
-  grid-template-columns: minmax(0, var(--smr-figure-chart-size)) minmax(220px, 1fr);
-  gap: calc(14px * var(--smr-scale));
-  align-items: center;
-  justify-content: center;
+  grid-template-rows: minmax(0, var(--smr-figure-plot-height)) auto;
+  gap: var(--smr-figure-content-gap);
+  align-content: center;
+  justify-items: center;
   min-height: 0;
   align-self: stretch;
   width: 100%;
-  max-width: calc(var(--smr-figure-chart-size) + 360px);
+  max-width: 100%;
+  justify-self: stretch;
+}
+
+.smr-side-pie-layout {
+  display: grid;
+  grid-template-columns: var(--smr-figure-chart-size) var(--smr-figure-legend-width);
+  gap: var(--smr-figure-content-gap);
+  align-items: center;
+  align-content: center;
+  min-height: 0;
+  align-self: stretch;
+  width: min(100%, var(--smr-figure-group-width));
+  max-width: 100%;
   justify-self: center;
 }
 
@@ -1773,12 +1789,13 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .smr-pie-legend.is-inline {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--smr-figure-legend-columns), minmax(0, 1fr));
   gap: calc(4px * var(--smr-scale)) calc(10px * var(--smr-scale));
   padding: 0;
   justify-items: center;
   align-items: start;
-  width: 100%;
+  width: min(100%, var(--smr-figure-legend-block-width));
+  max-width: 100%;
 }
 
 .smr-pie-legend.is-inline .smr-pie-legend-row {
@@ -1789,11 +1806,11 @@ input[type="number"]::-webkit-inner-spin-button {
 .smr-column-stage {
   min-height: 0;
   height: var(--smr-figure-plot-height);
-  width: min(100%, var(--smr-figure-chart-size));
+  width: var(--smr-figure-chart-size);
   margin: 0 auto;
   align-self: stretch;
   display: grid;
-  align-items: stretch;
+  place-items: center;
 }
 
 .smr-column-label-svg {
@@ -1862,6 +1879,12 @@ input[type="number"]::-webkit-inner-spin-button {
 .smr-pie-legend {
   align-content: center;
   gap: calc(8px * var(--smr-scale));
+  max-width: var(--smr-figure-legend-width);
+}
+
+.smr-side-pie-layout .smr-pie-legend {
+  justify-self: start;
+  width: var(--smr-figure-legend-width);
 }
 
 .smr-pie-legend-row {
