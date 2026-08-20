@@ -368,7 +368,9 @@ function deriveIndustryLabel(marketLabel: string): string {
 function parseDelimitedLines(raw: string): string[] {
   return dedupeNonEmpty(
     raw
-      .split(/\r?\n|,|;/g)
+      // Key players are entered one company per line. Keep punctuation such as
+      // commas and periods inside a company name intact.
+      .split(/\r?\n/g)
       .map((value) => value.trim())
       .filter((value) => value.length > 0)
   );

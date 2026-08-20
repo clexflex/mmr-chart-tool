@@ -927,7 +927,7 @@ export default function Home() {
                     </label>
 
                     <label className="ms-field ms-field-full">
-                      <span>Key Players (comma/newline separated)</span>
+                      <span>Key Players (one per line)</span>
                       <Textarea
                         value={keyPlayersRaw}
                         onChange={(event) => setKeyPlayersRaw(event.target.value)}
