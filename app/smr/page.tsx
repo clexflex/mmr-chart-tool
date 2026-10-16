@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { SegmentCatalogEditor } from "@/components/segments/SegmentCatalogEditor";
 import { SmrColumnCard, SmrDonutCard, SmrPie2DCard, SmrPie3DCard } from "@/components/smr/SmrChartCards";
+import { ToolNav } from "@/components/layout/ToolNav";
 import { SmrMappingEditor } from "@/components/smr/SmrMappingEditor";
 import { SmrSnapshotCard } from "@/components/smr/SmrSnapshotCard";
 import { Button } from "@/components/ui/button";
@@ -890,6 +891,7 @@ export default function SmrPage() {
               <div className="ms-workspace-status">
                 <SidebarTrigger className="ms-sidebar-trigger" />
                 <span className="ms-toolbar-label">Stellar Snapshot Builder</span>
+                <ToolNav />
                 <span className="ms-toolbar-chip">{OUTPUT_LABELS[activeOutput]}</span>
               </div>
 

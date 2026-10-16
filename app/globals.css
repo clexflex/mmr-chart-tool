@@ -14,6 +14,33 @@ body {
   padding: 0;
 }
 
+.tool-nav { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.tool-nav a { color: #275686; font-size: 12px; font-weight: 600; text-decoration: none; padding: 6px 9px; border: 1px solid #d2dce9; border-radius: 5px; background: #fff; }
+.tool-nav a:hover { background: #e8f3fc; }
+
+.word-page { min-height: 100vh; background: #f1f4f8; }
+.word-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 28px; background: #fff; border-bottom: 1px solid #d2dbe8; }
+.word-header h1 { margin: 4px 0 0; font-size: 24px; color: #173e6e; }
+.word-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; max-width: 1500px; margin: 0 auto; padding: 24px; }
+.word-panel { min-width: 0; padding: 20px; background: #fff; border: 1px solid #d2dbe8; border-radius: 10px; box-shadow: 0 2px 8px #10223b0a; }
+.word-panel h2 { margin: 0 0 8px; font-size: 18px; color: #173e6e; }
+.word-panel p { color: #44536a; font-size: 13px; }
+.word-panel label { display: block; margin: 16px 0 7px; font-size: 13px; font-weight: 700; }
+.word-panel textarea { width: 100%; min-height: 230px; resize: vertical; padding: 12px; border: 1px solid #b8c7d8; border-radius: 6px; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; color: #10223b; }
+.word-panel textarea:focus { outline: 2px solid #4478bb; outline-offset: 1px; }
+.word-actions, .word-panel-heading { display: flex; align-items: center; gap: 9px; }
+.word-actions { margin-top: 12px; }
+.word-panel-heading { justify-content: space-between; }
+.word-panel-heading .word-actions { margin-top: 0; flex-wrap: wrap; justify-content: flex-end; }
+.word-panel button { border: 1px solid #295e96; border-radius: 5px; background: #295e96; color: #fff; padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.word-panel button.word-secondary { background: #fff; color: #295e96; }
+.word-panel button:disabled { cursor: default; opacity: .45; }
+.word-status { min-height: 18px; }
+.word-preview { overflow: auto; min-height: 180px; padding: 12px; border: 1px solid #d2dbe8; border-radius: 6px; background: #fff; }
+.word-preview table { min-width: max-content; }
+.word-preview p { margin: 0; }
+@media (max-width: 850px) { .word-layout { grid-template-columns: 1fr; padding: 14px; } .word-header { flex-wrap: wrap; padding: 16px; } }
+
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: #f1f4f8;

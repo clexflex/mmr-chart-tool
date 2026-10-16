@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { SegmentationTablePreview } from "@/components/segmentation-table/SegmentationTablePreview";
+import { ToolNav } from "@/components/layout/ToolNav";
 import { TableStyleToggle } from "@/components/segmentation-table/TableStyleToggle";
 import { SegmentCatalogEditor } from "@/components/segments/SegmentCatalogEditor";
 import { SegmentMappingControls } from "@/components/segments/SegmentMappingControls";
@@ -1166,6 +1167,7 @@ export default function Home() {
               <div className="ms-workspace-status">
                 <SidebarTrigger className="ms-sidebar-trigger" />
                 <span className="ms-toolbar-label">MMR Snapshot Builder</span>
+                <ToolNav />
                 <span className="ms-toolbar-chip">{templateKind.replace("template", "Template ")}</span>
               </div>
 
